@@ -65,15 +65,14 @@ class GaussianPlugInClassifier(object):
             max_prob = -1
             for c in range(self.num_classes):
                 dx_c = x - meanX[c]       # diff
-                pYx_c = coeff[c] * np.exp(-0.5 * np.dot(dx_c, np.dot(sX_inv[c], dx_c.T)))
+                pYx_c = coeff[c] \
+                    * np.exp(-0.5 * np.dot(dx_c, np.dot(sX_inv[c], dx_c.T)))
                 pdensity[c].append(pYx_c)
                 if max_prob < pYx_c * class_weights[c]:
                     max_prob = pYx_c * class_weights[c]
                     class_prediction = c
-            
+    
             c_matrix[y, class_prediction] += 1
-        
-            #     print "Accuracy: %s%%" % ((c_matrix[0, 0] + c_matrix[1, 1]) / np.sum(c_matrix))
         
         return c_matrix, pdensity
     

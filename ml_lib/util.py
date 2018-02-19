@@ -10,6 +10,11 @@ import matplotlib.pyplot as plt
 import time
 import heapq as hq
 
+def select_features(X, feature_ids):
+    X_selected = np.zeros((X.shape[0], 1))
+    for col in feature_ids:
+        X_selected = np.append(X_selected, X[:, col:(col+1)], axis=1)
+    return X_selected[:, 1:]
 
 def normalize(X, f_range=None, f_mean=None):
     if f_range is None:
@@ -30,21 +35,10 @@ def draw_class_histograms(X, Y, num_classes, col):
     plt.ylabel('Frequency')
     plt.show()
 
-# def draw_class_histograms(X_0, X_1, col):
-#     x_0 = X_0[:, col]
-#     x_1 = X_1[:, col]
-#     
-#     plt.hist(x_0, alpha=0.5, label='0', bins=50)
-#     plt.hist(x_1, alpha=0.5, label='1', bins=50)
-#     plt.xlabel('Feature %s' % (col))
-#     plt.ylabel('Frequency')
-#     plt.show()
-
 def split_into_train_test_sets(X, Y, test_portion):
     # Split into Training and Testing sets    
     train_idx=[]
     test_idx=[]
-    print test_portion
     for i in range(X.shape[0]):
         if i % 4 == test_portion:
             test_idx.append(i)
@@ -75,7 +69,8 @@ def draw_classes_pdf(X, Y, classifier, threshold, col):
 # true negative vs false negative
 def draw_ROC_curve(X_test, Y_test, classifier):
     
-    # Heap to keep test_classification_gaussian accuracy measurements sorted by threshold value
+    # Heap to keep test_classification_gaussian accuracy measurements 
+    # sorted by threshold value
     measureHeap = []
     hq.heappush(measureHeap, (0, 1, 1))
     hq.heappush(measureHeap, (1, 0, 0))
@@ -85,19 +80,19 @@ def draw_ROC_curve(X_test, Y_test, classifier):
     
     start_time = time.time()
 
-    # Heap to keep track of largest threshold gaps that we can sub-sample within
+    # Heap to keep track of largest threshold gaps that we can subsample within
     heap = [(1, 0, 1, 1, 0)]    # tgap, x1, x2, t1, t2  where tgap = abs(t2-t1)
     # At each iteration, find the largest threshold gap and measure accuracy at 
-    # its midpoint threshold value, thereby splitting the gap into two new gaps.
+    # its midpoint threshold value, thereby splitting the gap into 2 new gaps.
     for i in range(measurements):
     
         tgap, x1, x2, t1, t2 = hq.heappop(heap)
         x = (x1 + x2) / 2   # new threshold
-        A, P = classifier.classify(X_test, Y_test, [x, 1-x])
+        A, P = classifier.classify(X_test, Y_test, [1-x, x])
         t = A[0,0] / (A[0, 0] + A[0, 1])    # true negatives
         f = A[1,0] / (A[1, 0] + A[1, 1])    # false negatives
         
-        hq.heappush(measureHeap, (x, t, f)) # store measurement for later plotting
+        hq.heappush(measureHeap, (x, t, f)) # store for later plotting
     
         hq.heappush(heap, (-abs(t - t1), x1, x, t1, t))
         hq.heappush(heap, (-abs(t2 - t), x, x2, t, t2))
@@ -130,17 +125,12 @@ def draw_ROC_curve(X_test, Y_test, classifier):
     plt.ylabel('true negatives')
     plt.xlim(left=0.999)
     plt.show()
-
+ 
     plt.plot(rstep, fn, 'r-')   
     plt.xlabel('threshold')
     plt.ylabel('false negatives')
     plt.show()
     
-    # test_classification_gaussian set 0 has fn=0 at > .9998      reasonable at 0.5 (i.e 95% tn)
-    # test_classification_gaussian set 1 has fn=0 at > who knows  reasonable at 0.5
-    # test_classification_gaussian set 2 has fn=0 at > .999999    reasonable at 0.9995
-    # test_classification_gaussian set 3 has fn=0 at > .999999    reasonable at .9995
-
 def draw_classes_data(X, Y, colA, colB):
     xA = X[:, colA]
     xB = X[:, colB]

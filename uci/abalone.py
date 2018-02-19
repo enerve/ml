@@ -1,15 +1,15 @@
 '''
-@author erwin
+@author erw
 
 '''
 
 import argparse
 import numpy as np
 
-from gaussian_plugin_classifier import GaussianPlugInClassifier 
-from gaussian_naive_classifier import GaussianNaiveClassifier
+from ml_lib.gaussian_plugin_classifier import GaussianPlugInClassifier 
+from ml_lib.gaussian_naive_classifier import GaussianNaiveClassifier
 
-import util
+import ml_lib.util as util
 
 # Draw histograms for each column
 def draw_classes_histogram(X, Y, num_classes):
@@ -20,7 +20,9 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
     parser.add_argument('file', help='path to data file')
-    parser.add_argument('--test_portion', help='Which portion to use as test set', default=3, type=int)
+    parser.add_argument('--test_portion',
+                        help='Which portion to use as test set',
+                        default=1, type=int)
     parser.add_argument('--draw_classes_data', action='store_true')
     parser.add_argument('--draw_classes_histogram', action='store_true')
     parser.add_argument('--normalize', action='store_true')
@@ -30,7 +32,11 @@ if __name__ == '__main__':
     parser.add_argument('--stochastic', action='store_true')
     args = parser.parse_args()
 
-    data = np.genfromtxt(args.file, delimiter=",", converters={0: lambda x: 0.0 if x=='M' else 1.0 if x=='F' else 2.0 if x=='I' else -1.0})
+    data = np.genfromtxt(args.file, delimiter=",",
+                         converters={0: lambda x: 0.0 if x=='M' 
+                                     else 1.0 if x=='F' 
+                                     else 2.0 if x=='I' else -1.0}
+                        )
     
     # Create separate column for each categorical 'sex' value
     X = np.append(np.zeros((data.shape[0], 2)), data[:,1:8], axis=1)    
@@ -39,20 +45,15 @@ if __name__ == '__main__':
 #     X[:, 2][data[:, 0] == 2.0] = 1
     
     Y = data[:, 8]
-    # Select features manually, of the 10
-    X_selected = np.zeros((X.shape[0], 1))
-    for col in [0, 1, 2, 3, 4, 5, 6, 7, 8]:
-#         print X[:, col:(col+1)].shape
-        X_selected = np.append(X_selected, X[:, col:(col+1)], axis=1)
-    print X_selected.shape
-    X = X_selected[:, 1:]
+    X = util.select_features(X, [0, 1, 2, 3, 4, 5, 6, 7, 8])
 
     print "Full dataset: ", X.shape
     print "  Males:   ", np.sum(X[:,0])
     print "  Females: ", np.sum(X[:,1])
     print "  Infants: ", np.sum(X[:,2])
     
-    X, Y, X_test, Y_test = util.split_into_train_test_sets(X, Y, args.test_portion)
+    X, Y, X_test, Y_test = util.split_into_train_test_sets(
+        X, Y, args.test_portion)
     
     print "Training dataset:   %s" % (X.shape, )
     print "Testing dataset(%d): %s" % (args.test_portion, X_test.shape)
@@ -98,7 +99,8 @@ if __name__ == '__main__':
             print "Naive bayes classifier..."
             # Gaussian naive bayes classifier
             
-            gpi_classifier = GaussianNaiveClassifier(X, Ya, len(split_points))
+            naive_classifier = GaussianNaiveClassifier(X, Ya, 
+                                                       len(split_points))
             
             # util.report_accuracy(gpi_classifier.classify(X, Y, 0.5)[0])
-            util.report_accuracy(gpi_classifier.classify(X_test, Ya_test)[0])
+            util.report_accuracy(naive_classifier.classify(X_test, Ya_test)[0])

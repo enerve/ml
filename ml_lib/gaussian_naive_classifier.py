@@ -18,8 +18,8 @@ class GaussianNaiveClassifier(object):
         self.Y = Y
         self.num_classes = num_classes
     
-    # Function that tests data classification for a gaussian naive plug-in classifier
-    # and returns confusion matrix
+    # Function that tests data classification for a gaussian naive plug-in
+    # classifier and returns confusion matrix
     def classify(self, X_test, Y_test, class_weights=None):
         if class_weights is None:
             class_weights = [1.0 for x in range(self.num_classes)]        
@@ -36,7 +36,6 @@ class GaussianNaiveClassifier(object):
             i_c = self.Y == c   # Indices where y==c
             num_c = np.sum(i_c)
             prior_c = num_c / num
-#             print i_c, num_c
 
             X_c = self.X[i_c]    # All class datapoints
     
@@ -52,14 +51,14 @@ class GaussianNaiveClassifier(object):
                 
         c_matrix = np.zeros((self.num_classes, self.num_classes))
         
-#         print prior
-        
         for i in range(X_test.shape[0]):
             x = X_test[i]
             y = int(Y_test[i])
             max_prob = -1
             for c in range(self.num_classes):
-                pYx_c = prior[c] * np.product((1 / varX[c]) * np.exp(-0.5 * np.square(x - meanX[c]) / varX[c]))
+                pYx_c = prior[c] * np.product(
+                    (1 / varX[c]) * np.exp(
+                        -0.5 * np.square(x - meanX[c]) / varX[c]))
                 pdensity[c].append(pYx_c)
                 if max_prob < pYx_c * class_weights[c]:
                     max_prob = pYx_c * class_weights[c]
