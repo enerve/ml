@@ -10,11 +10,18 @@ import matplotlib.pyplot as plt
 import time
 import heapq as hq
 
+
+# ------ Algorithm helpers ---------
+
+
 def select_features(X, feature_ids):
     X_selected = np.zeros((X.shape[0], 1))
     for col in feature_ids:
         X_selected = np.append(X_selected, X[:, col:(col+1)], axis=1)
     return X_selected[:, 1:]
+
+def append_feature(V, X):
+    return np.append(X, np.reshape(V, (V.shape[0], 1)), axis=1)
 
 def normalize(X, f_range=None, f_mean=None):
     if f_range is None:
@@ -26,14 +33,56 @@ def normalize(X, f_range=None, f_mean=None):
     X -= f_mean
     return X, f_range, f_mean
 
-def draw_class_histograms(X, Y, num_classes, col):
-    for c in range(num_classes):
-        i_c = Y == c
-        x_c = X[i_c, col]
-        plt.hist(x_c, alpha=0.5, label='%s' % (c), bins=50)
-    plt.xlabel('Feature %s' % (col))
-    plt.ylabel('Frequency')
-    plt.show()
+def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
+                         create_classifier):
+    n = len(split_points)
+    print "Running linear multiclassifier on %s splits" %(n)
+    print split_points
+    
+    Yp = np.zeros((Ya_test.shape[0], n))
+    for i, spl in enumerate(split_points):
+        if spl==-1: continue
+        print "Splitting at %s" % (spl)
+        Yb = np.zeros((Ya.shape[0]))
+        Yb[Ya>=i] = 1
+        classifier = create_classifier(X, Yb)
+        print classifier.classify(X, Yb)
+
+        Yp_i = classifier.predict(X_test)
+        Yp[:, i] = Yp_i
+        
+        ### rmoeve?
+#         classifier.plot_likelihood_train(False)
+#         Yb_test = np.zeros(Ya_test.shape[0])
+#         Yb_test[Ya_test>=i] = 1
+#         classifier.plot_likelihood_test(X_test, Yb_test , True)
+        
+    Yp[:, 0] = 1    #it's gotta be positive by definition.
+#             Yp[:, 0] = -Yp[:, 1]
+#             print np.count_nonzero(Yp[:, 1] < 0), \
+#                 np.count_nonzero(Yp[:, 2] < 0)
+
+    for i in range(n-1):
+        Yp[:, i] *= Yp[:, i+1]
+    Yp[:, n-1] = - Yp[:, n-1] # pretend n+1 col wudve been negative
+
+    Yguess = np.argmin(Yp, axis=1)
+#             print np.count_nonzero(Yguess == 0), \
+#                 np.count_nonzero(Yguess == 1), \
+#                 np.count_nonzero(Yguess == 2)
+    
+    c_matrix = np.zeros((n, n))
+    for i in range(n):
+        for j in range(n):
+            c_matrix[i, j] = np.sum(
+                np.logical_and((Yguess == j), (Ya_test == i)))
+    print c_matrix
+    accr = 0
+    for i in range(n):
+        accr += c_matrix[i, i]
+    print 'Overall test acc: %f%%' % (100 * accr / np.sum(c_matrix))
+
+# ------ Drawing ---------
 
 def split_into_train_test_sets(X, Y, test_portion):
     # Split into Training and Testing sets    
@@ -50,6 +99,14 @@ def split_into_train_test_sets(X, Y, test_portion):
     Y = Y[train_idx]
     return (X, Y, X_test, Y_test)
 
+def draw_class_histograms(X, Y, num_classes, col):
+    for c in range(num_classes):
+        i_c = Y == c
+        x_c = X[i_c, col]
+        plt.hist(x_c, alpha=0.5, label='%s' % (c), bins=50)
+    plt.xlabel('Feature %s' % (col))
+    plt.ylabel('Frequency')
+    plt.show()
 
 # Draw class pdf of the classifier but along a single given axis/column
 def draw_classes_pdf(X, Y, classifier, threshold, col):
@@ -147,6 +204,9 @@ def draw_classes_data(X, Y, colA, colB):
     #plt.ylim(0,0.000001)
     plt.show()
     return plt
+
+
+# ------ Logging/Debugging ---------
 
 def report_accuracy(c_matrix):
     correct = sum([c_matrix[i, i] for i in range(len(c_matrix[0]))])

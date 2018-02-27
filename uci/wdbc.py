@@ -40,6 +40,7 @@ if __name__ == '__main__':
     parser.add_argument('--perceptron', action='store_true')
     parser.add_argument('--sklearn_perceptron', action='store_true')
     parser.add_argument('--stochastic', action='store_true')
+    parser.add_argument('--logistic', action='store_true')
     args = parser.parse_args()
     
     data = np.genfromtxt(args.file, delimiter=",",
@@ -49,6 +50,7 @@ if __name__ == '__main__':
 
     X, Y, X_test, Y_test = util.split_into_train_test_sets(X, Y,
                                                            args.test_portion)
+    print "--- WDBC dataset ---"
     print X.shape, X_test.shape
 
     if args.normalize:
@@ -95,6 +97,92 @@ if __name__ == '__main__':
     if args.perceptron:
         print "Perceptron..."
         from ml_lib.perceptron import Perceptron
-        perceptron = Perceptron(X, Y, args.stochastic, 1, 300000, 0)
-        print perceptron.classify(X, Y)
-        print perceptron.classify(X_test, Y_test)
+#         perceptron = Perceptron(X, Y, args.stochastic, 1, 300000, 0)
+#         print perceptron.classify(X, Y)
+#         print perceptron.classify(X_test, Y_test)
+
+#     if args.perceptron:
+#         print "Multiclass Perceptron..."
+#         from ml_lib.perceptron import Perceptron
+#         
+        Ya = Y
+        Ya_test = Y_test
+        split_points = [-1, 0]
+        n = len(split_points)
+        
+        def create_classifier(X, Y):
+            perceptron = Perceptron(X, Y, args.stochastic,
+                                    1, 30000, 0)
+            return perceptron
+            
+        util.linear_multiclassify(X, Ya, X_test, Ya_test,
+                                  split_points, create_classifier)
+            
+
+#         Yp = np.zeros((Ya_test.shape[0], n))
+#         for i, spl in enumerate(split_points):
+#             if spl==-1: continue
+#             print "Splitting at %s" % (spl)
+#             Yb = np.zeros((Ya.shape[0]))
+#             Yb[Ya==i] = 1
+#             perceptron = Perceptron(X, Yb, args.stochastic,
+#                                     1, 300000, 0)
+#             print perceptron.classify(X, Yb)
+#              
+#             Yb_test = perceptron.predict(X_test)
+#             Yp[:, i] = Yb_test
+# 
+# #         for j in range(n):
+# #             if j >= i:
+# #                 Yp[:, j] -= Yb_test
+# #             else:
+# #                 Yp[:, j] += Yb_test
+#         Yp[:, 0] = -Yp[:, 1]
+#         Yguess = np.argmax(Yp, axis=1)
+#         c_matrix = np.zeros((n, n))
+#         for i in range(n):
+#             for j in range(n):
+#                 c_matrix[i, j] = np.sum(
+#                     np.logical_and((Yguess == j), (Ya_test == i)))
+#         print c_matrix
+
+    if args.logistic:
+        print "Logistic Regression..."
+        from ml_lib.logistic import Logistic
+        
+        
+        Ya = Y
+        Ya_test = Y_test
+        split_points = [-1, 0]
+        n = len(split_points)
+
+        def create_classifier(X, Y):
+            logistic = Logistic(X, Y, step_size=0.01, max_steps=15000,
+                                reg_constant=0.05)
+            return logistic
+            
+        util.linear_multiclassify(X, Ya, X_test, Ya_test,
+                                  split_points, create_classifier)
+
+#         logistic = Logistic(X, Y, step_size=0.01, max_steps=15000,
+#                             reg_constant=0.05)
+#         print logistic.classify(X, Y)
+#         logistic.plot_likelihood_train(False)
+#         logistic.plot_likelihood_test(X_test, Y_test, True)
+# #         print logistic.classify(X_test, Y_test)
+
+
+
+#         test_acc = []
+#         logistic = None
+#         for steps in range(10, 4010, 100):
+#             
+#             logistic = Logistic(X, Y, step_size=0.01, max_steps=steps,
+#                                 reg_constant=0.01)
+#             cm = logistic.classify(X_test, Y_test)
+#             test_acc.append((cm[0,0] + cm[1,1]) / Y_test.shape[0])
+#         lik_plt = logistic.plot_likelihood_train(False)
+#         x_range = range(len(test_acc))
+#         plt.plot(x_range, test_acc)
+#         plt.show()
+

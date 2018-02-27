@@ -16,6 +16,7 @@ def draw_classes_histogram(X, Y, num_classes):
     for col in range(10):
         util.draw_class_histograms(X, Y, num_classes, col)
 
+
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
@@ -30,6 +31,7 @@ if __name__ == '__main__':
     parser.add_argument('--naive', action='store_true')
     parser.add_argument('--perceptron', action='store_true')
     parser.add_argument('--stochastic', action='store_true')
+    parser.add_argument('--logistic', action='store_true')
     args = parser.parse_args()
 
     data = np.genfromtxt(args.file, delimiter=",",
@@ -44,9 +46,15 @@ if __name__ == '__main__':
     X[:, 1][data[:, 0] == 1.0] = 1
 #     X[:, 2][data[:, 0] == 2.0] = 1
     
-    Y = data[:, 8]
-    X = util.select_features(X, [0, 1, 2, 3, 4, 5, 6, 7, 8])
+    X = util.append_feature(data[:, 1] * data[:, 2] * data[:, 3], X)
+    X = util.append_feature(data[:, 1] * data[:, 2], X)
+    X = util.append_feature(data[:, 1] * data[:, 1], X)
+        
+    # X = util.select_features(X, [0, 1, 2, 3, 4, 5, 6, 7, 8])
 
+    Y = data[:, 8]
+
+    print "--- Abalone dataset ---"
     print "Full dataset: ", X.shape
     print "  Males:   ", np.sum(X[:,0])
     print "  Females: ", np.sum(X[:,1])
@@ -66,7 +74,8 @@ if __name__ == '__main__':
 
     if True: # Classification
         split_points = [-1, 8, 10]
-        print "Classes (%s) split at:" %(len(split_points))
+        n = len(split_points)
+        print "Classes (%s) split at:" %(n)
         print split_points[1:]
 
         Ya = np.zeros(Y.shape)
@@ -84,13 +93,13 @@ if __name__ == '__main__':
 #         print "  Class 2: ", np.sum(Ya == 2)
 
         if args.draw_classes_histogram:
-            draw_classes_histogram(X, Ya, len(split_points))
+            draw_classes_histogram(X, Ya, n)
 
         if args.bayes:
             print "Bayes classifier..."
             # Gaussian plug-in classifier
             
-            gpi_classifier = GaussianPlugInClassifier(X, Ya, len(split_points))
+            gpi_classifier = GaussianPlugInClassifier(X, Ya, n)
                 
             # util.report_accuracy(gpi_classifier.classify(X, Y, 0.5)[0])
             util.report_accuracy(gpi_classifier.classify(X_test, Ya_test)[0])
@@ -99,8 +108,31 @@ if __name__ == '__main__':
             print "Naive bayes classifier..."
             # Gaussian naive bayes classifier
             
-            naive_classifier = GaussianNaiveClassifier(X, Ya, 
-                                                       len(split_points))
+            naive_classifier = GaussianNaiveClassifier(X, Ya, n)
             
             # util.report_accuracy(gpi_classifier.classify(X, Y, 0.5)[0])
             util.report_accuracy(naive_classifier.classify(X_test, Ya_test)[0])
+
+        if args.perceptron:
+            print "Perceptron..."
+            from ml_lib.perceptron import Perceptron
+            
+            def create_classifier(X, Y):
+                perceptron = Perceptron(X, Y, args.stochastic,
+                                        1, 30000, 0)
+                return perceptron
+            
+            util.linear_multiclassify(X, Ya, X_test, Ya_test,
+                                      split_points, create_classifier)
+            
+        if args.logistic:
+            print "Logistic Regression..."
+            from ml_lib.logistic import Logistic
+            
+            def create_classifier(X, Y):
+                logistic = Logistic(X, Y, step_size=0.001, max_steps=15000,
+                                    reg_constant=0.01)
+                return logistic
+                
+            util.linear_multiclassify(X, Ya, X_test, Ya_test,
+                                      split_points, create_classifier)
