@@ -131,29 +131,18 @@ if __name__ == '__main__':
                                         1, 8000, 0)
                 return perceptron
             
-#             util.linear_multiclassify(X, Ya, X_test, Ya_test,
-#                                       split_points, create_classifier)
-            util.linear_multiclassify(X, Ya, X, Ya,
+            util.linear_multiclassify(X, Ya, X_test, Ya_test,
                                       split_points, create_classifier)
             
         if args.logistic:
             print "Logistic Regression..."
             util.pre_alg = "logistic"
             from ml_lib.logistic import Logistic
-            from ml_lib.logistic import Logistic, prefix
-
-            settings = {
-                    'step_size': 0.001,
-                    'max_steps': 15000,
-                    'reg_constant': 0.01
-                }
+            
             def create_classifier(X, Y):
-                logistic = Logistic(X, Y,
-                                    step_size=settings['step_size'],
-                                    max_steps=settings['max_steps'],
-                                    reg_constant=settings['reg_constant'])
+                logistic = Logistic(X, Y, step_size=0.001, max_steps=15000,
+                                    reg_constant=0.01)
                 return logistic
                 
             util.linear_multiclassify(X, Ya, X_test, Ya_test,
-                                      split_points, create_classifier,
-                                      settings)
+                                      split_points, create_classifier)

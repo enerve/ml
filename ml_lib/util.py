@@ -9,7 +9,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import heapq as hq
-import datetime
 
 
 # ------ Algorithm helpers ---------
@@ -35,7 +34,7 @@ def normalize(X, f_range=None, f_mean=None):
     return X, f_range, f_mean
 
 def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
-                         create_classifier, settings):
+                         create_classifier):
     n = len(split_points)
     print "Running linear multiclassifier on %s splits" %(n)
     print split_points
@@ -47,20 +46,16 @@ def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
         Yb = np.zeros((Ya.shape[0]))
         Yb[Ya>=i] = 1
         classifier = create_classifier(X, Yb)
-        c_matrix = classifier.classify(X, Yb)
-        
-        log(str(i), prefix())
-        log_accuracy(c_matrix, prefix())
+        print classifier.classify(X, Yb)
 
         Yp_i = classifier.predict(X_test)
         Yp[:, i] = Yp_i
         
         ### rmoeve?
-        classifier.plot_likelihood_train(False, prefix() + str(i))
+        classifier.plot_likelihood_train(False, str(i))
         Yb_test = np.zeros(Ya_test.shape[0])
         Yb_test[Ya_test>=i] = 1
-        classifier.plot_likelihood_test(X_test, Yb_test, True,
-                                        prefix() + str(i))
+        classifier.plot_likelihood_test(X_test, Yb_test, True, str(i))
         
         
     Yp[:, 0] = 1    #it's gotta be positive by definition.
@@ -86,12 +81,7 @@ def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
     accr = 0
     for i in range(n):
         accr += c_matrix[i, i]
-        
-    log('Overall test acc: %f%%' % (100 * accr / np.sum(c_matrix)),
-               prefix())
-    
-    
-
+    print 'Overall test acc: %f%%' % (100 * accr / np.sum(c_matrix))
 
 # ------ Drawing ---------
 
@@ -239,23 +229,4 @@ def report_accuracy(c_matrix):
     print "Accuracy: %s%%" % (correct / np.sum(c_matrix))
     for c in c_matrix:
         print "\t", c
-        
     
-def log_accuracy(c_matrix, prefix=None):
-    str = "Accuracy: %f%%" % (100 * (c_matrix[0, 0] + c_matrix[1, 1]) 
-                              / np.sum(c_matrix))
-    log(str, prefix)
-
-def log(str, prefix=None):
-    print str
-    
-    fname = ("%s_"%prefix if prefix else '') \
-        + 'log.txt'
-    log_append(str, fname)
-    
-def log_append(msg, fname):
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ":  "
-    
-    with open(fname, "a") as logfile:
-        logfile.write(timestamp + msg + '\n')
-

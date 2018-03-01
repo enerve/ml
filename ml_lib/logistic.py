@@ -13,12 +13,6 @@ def sigmoid(A):
     e = np.exp(-A)
     return 1 / (1 + e)
 
-def prefix(settings):
-    return util.prefix() +\
-        "a%s_"%settings['step_size'] + \
-        "r%s_"%settings['reg_constant'] + \
-        "s%s_"%settings['max_steps']
-
 class Logistic(object):
     '''
     The Logistic Regression classifier, intended to be run on a dataset of two
@@ -99,7 +93,8 @@ class Logistic(object):
         if show_plot:
             plt.xlabel("Iteration")
             plt.ylabel("Likelihood")
-            fname = ("%s_"%prefix if prefix else '') \
+            fname = self.prefix() + \
+                + ("%s_"%prefix if prefix else '') \
                 + 'train.png'
             plt.savefig(fname, bbox_inches='tight')
             plt.show()
@@ -136,7 +131,8 @@ class Logistic(object):
         if show_plot:
             plt.xlabel("Iteration")
             plt.ylabel("Likelihood")
-            fname = ("%s_"%prefix if prefix else '') \
+            fname = self.prefix() \
+                + ("%s_"%prefix if prefix else '') \
                 + 'ttest.png'
             plt.savefig(fname, bbox_inches='tight')
             plt.show()
@@ -158,11 +154,17 @@ class Logistic(object):
         for i, y in enumerate(Yt):
             c_matrix[y, class_prediction[i]] += 1
         
-#         print "Accuracy: %f%%" % (100 * (c_matrix[0, 0] + c_matrix[1, 1]) 
-#                                   / np.sum(c_matrix))
+        print "Accuracy: %f%%" % (100 * (c_matrix[0, 0] + c_matrix[1, 1]) 
+                                  / np.sum(c_matrix))
         
         return c_matrix
     
+    def prefix(self):
+        return util.prefix() +\
+            "a%s_"%self.step_size + \
+            "r%s_"%self.reg_constant + \
+            "s%s_"%self.max_steps
+
     def predict(self, X_test):
         """ Predict class for the given data, and return for each, a quantity 
             that is positive if class is 1 and that is proportional to the

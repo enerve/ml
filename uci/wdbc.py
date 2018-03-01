@@ -134,23 +134,17 @@ if __name__ == '__main__':
     if args.logistic:
         print "Logistic Regression..."
         util.pre_alg = "logistic"
-        from ml_lib.logistic import Logistic, prefix
+        from ml_lib.logistic import Logistic
+        
         
         Ya = Y
         Ya_test = Y_test
         split_points = [-1, 0]
         n = len(split_points)
 
-        settings = {
-                'step_size': 0.01,
-                'max_steps': 15000,
-                'reg_constant': 0
-            }
         def create_classifier(X, Y):
-            logistic = Logistic(X, Y,
-                                step_size=settings['step_size'],
-                                max_steps=settings['max_steps'],
-                                reg_constant=settings['reg_constant'])
+            logistic = Logistic(X, Y, step_size=0.01, max_steps=15000,
+                                reg_constant=0.05)
             return logistic
         
         util.linear_multiclassify(X, Ya, X_test, Ya_test,
