@@ -19,8 +19,9 @@ def draw_classes_histogram(X, Y, num_classes):
 
 if __name__ == '__main__':
     
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()  
     parser.add_argument('file', help='path to data file')
+    parser.add_argument('--output_dir', help='path to store output files')
     parser.add_argument('--test_portion',
                         help='Which portion to use as test set',
                         default=1, type=int)
@@ -33,6 +34,9 @@ if __name__ == '__main__':
     parser.add_argument('--stochastic', action='store_true')
     parser.add_argument('--logistic', action='store_true')
     args = parser.parse_args()
+
+    print "--- Abalone dataset ---"
+    util.pre_dataset = "abalone"
 
     data = np.genfromtxt(args.file, delimiter=",",
                          converters={0: lambda x: 0.0 if x=='M' 
@@ -54,7 +58,8 @@ if __name__ == '__main__':
 
     Y = data[:, 8]
 
-    print "--- Abalone dataset ---"
+    util.pre_outputdir = args.output_dir
+
     print "Full dataset: ", X.shape
     print "  Males:   ", np.sum(X[:,0])
     print "  Females: ", np.sum(X[:,1])
@@ -66,8 +71,9 @@ if __name__ == '__main__':
     print "Training dataset:   %s" % (X.shape, )
     print "Testing dataset(%d): %s" % (args.test_portion, X_test.shape)
 
-    if True:#args.normalize:
+    if args.normalize:
         print "Normalizing..."
+        util.pre_norm = "n"
         X, f_range, f_mean = util.normalize(X)
         X_test = util.normalize(X_test, f_range, f_mean)[0]
 
@@ -87,16 +93,17 @@ if __name__ == '__main__':
             Ya_test[Y_test>spl] = i
 
 #         print Ya==2
-#         print "Training set"
-#         print "  Class 0: ", np.sum(Ya == 0)
-#         print "  Class 1: ", np.sum(Ya == 1)
-#         print "  Class 2: ", np.sum(Ya == 2)
+        print "Training set"
+        print "  Class 0: ", np.sum(Ya == 0)
+        print "  Class 1: ", np.sum(Ya == 1)
+        print "  Class 2: ", np.sum(Ya == 2)
 
         if args.draw_classes_histogram:
             draw_classes_histogram(X, Ya, n)
 
         if args.bayes:
             print "Bayes classifier..."
+            util.pre_alg = "bayes"
             # Gaussian plug-in classifier
             
             gpi_classifier = GaussianPlugInClassifier(X, Ya, n)
@@ -106,6 +113,7 @@ if __name__ == '__main__':
     
         if args.naive:
             print "Naive bayes classifier..."
+            util.pre_alg = "naive"
             # Gaussian naive bayes classifier
             
             naive_classifier = GaussianNaiveClassifier(X, Ya, n)
@@ -115,24 +123,37 @@ if __name__ == '__main__':
 
         if args.perceptron:
             print "Perceptron..."
+            util.pre_alg = "perceptron"
             from ml_lib.perceptron import Perceptron
             
             def create_classifier(X, Y):
                 perceptron = Perceptron(X, Y, args.stochastic,
-                                        1, 30000, 0)
+                                        1, 8000, 0)
                 return perceptron
             
-            util.linear_multiclassify(X, Ya, X_test, Ya_test,
+#             util.linear_multiclassify(X, Ya, X_test, Ya_test,
+#                                       split_points, create_classifier)
+            util.linear_multiclassify(X, Ya, X, Ya,
                                       split_points, create_classifier)
             
         if args.logistic:
             print "Logistic Regression..."
+            util.pre_alg = "logistic"
             from ml_lib.logistic import Logistic
-            
+            from ml_lib.logistic import Logistic, prefix
+
+            settings = {
+                    'step_size': 0.001,
+                    'max_steps': 15000,
+                    'reg_constant': 0.01
+                }
             def create_classifier(X, Y):
-                logistic = Logistic(X, Y, step_size=0.001, max_steps=15000,
-                                    reg_constant=0.01)
+                logistic = Logistic(X, Y,
+                                    step_size=settings['step_size'],
+                                    max_steps=settings['max_steps'],
+                                    reg_constant=settings['reg_constant'])
                 return logistic
                 
             util.linear_multiclassify(X, Ya, X_test, Ya_test,
-                                      split_points, create_classifier)
+                                      split_points, create_classifier,
+                                      settings)

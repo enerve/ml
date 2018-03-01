@@ -7,10 +7,17 @@ from __future__ import division
 
 import numpy as np
 import matplotlib.pyplot as plt
+import util
 
 def sigmoid(A):
     e = np.exp(-A)
     return 1 / (1 + e)
+
+def prefix(settings):
+    return util.prefix() +\
+        "a%s_"%settings['step_size'] + \
+        "r%s_"%settings['reg_constant'] + \
+        "s%s_"%settings['max_steps']
 
 class Logistic(object):
     '''
@@ -80,12 +87,11 @@ class Logistic(object):
 #         plt.ylabel("Feature weight")
 #         plt.show()
         
-        print np.array2string(w, precision=2, separator=',')
+#         print np.array2string(w, precision=2, separator=',')
         
         self.w = w
-    
-    
-    def plot_likelihood_train(self, show_plot=True):
+        
+    def plot_likelihood_train(self, show_plot=True, prefix=None):
         if self.w is None: self.learn()
 
         x_range = range(len(self.stats_lik))
@@ -93,6 +99,9 @@ class Logistic(object):
         if show_plot:
             plt.xlabel("Iteration")
             plt.ylabel("Likelihood")
+            fname = ("%s_"%prefix if prefix else '') \
+                + 'train.png'
+            plt.savefig(fname, bbox_inches='tight')
             plt.show()
 
     def plot_likelihood_improvement_train(self):
@@ -110,7 +119,8 @@ class Logistic(object):
         plt.ylabel("Likelihood improvement")
         plt.show()
 
-    def plot_likelihood_test(self, X_test, Y_test, show_plot=True):
+    def plot_likelihood_test(self, X_test, Y_test, show_plot=True,
+                             prefix=None):
         if self.w is None: self.learn()
 
         Xt = np.append(np.ones((X_test.shape[0], 1)), X_test, axis=1)
@@ -126,6 +136,9 @@ class Logistic(object):
         if show_plot:
             plt.xlabel("Iteration")
             plt.ylabel("Likelihood")
+            fname = ("%s_"%prefix if prefix else '') \
+                + 'ttest.png'
+            plt.savefig(fname, bbox_inches='tight')
             plt.show()
 
     def classify(self, X_test, Y_test):
@@ -145,8 +158,8 @@ class Logistic(object):
         for i, y in enumerate(Yt):
             c_matrix[y, class_prediction[i]] += 1
         
-        print "Accuracy: %f%%" % (100 * (c_matrix[0, 0] + c_matrix[1, 1]) 
-                                  / np.sum(c_matrix))
+#         print "Accuracy: %f%%" % (100 * (c_matrix[0, 0] + c_matrix[1, 1]) 
+#                                   / np.sum(c_matrix))
         
         return c_matrix
     

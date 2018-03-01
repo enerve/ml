@@ -29,9 +29,10 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
     parser.add_argument('file', help='path to wdbc file')
+    parser.add_argument('--output_dir', help='path to store output files')
     parser.add_argument('--test_portion',
                         help='Which portion to use as test set',
-                        default=1, type=int)
+                        default=0, type=int)
     parser.add_argument('--draw_classes_data', action='store_true')
     parser.add_argument('--draw_classes_histogram', action='store_true')
     parser.add_argument('--normalize', action='store_true')
@@ -41,8 +42,12 @@ if __name__ == '__main__':
     parser.add_argument('--sklearn_perceptron', action='store_true')
     parser.add_argument('--stochastic', action='store_true')
     parser.add_argument('--logistic', action='store_true')
+    parser.add_argument('--knn', action='store_true')
     args = parser.parse_args()
     
+    print "--- WDBC dataset ---"
+    util.pre_dataset = "wdbc"
+
     data = np.genfromtxt(args.file, delimiter=",",
                          converters={1: lambda x: 1.0 if x=='M' else 0.0})
     Y = data[:, 1].astype(int)
@@ -50,11 +55,14 @@ if __name__ == '__main__':
 
     X, Y, X_test, Y_test = util.split_into_train_test_sets(X, Y,
                                                            args.test_portion)
-    print "--- WDBC dataset ---"
+    
     print X.shape, X_test.shape
+
+    util.pre_outputdir = args.output_dir
 
     if args.normalize:
         print "Normalizing..."
+        util.pre_norm = "n"
         X, f_range, f_mean = util.normalize(X)
         X_test = util.normalize(X_test, f_range, f_mean)[0]
     
@@ -66,6 +74,7 @@ if __name__ == '__main__':
 
     if args.bayes:
         print "Bayes classifier..."
+        util.pre_alg = "bayes"
         from ml_lib.gaussian_plugin_classifier import GaussianPlugInClassifier 
         # Gaussian plug-in classifier
         gpi_classifier = GaussianPlugInClassifier(X, Y, 2)
@@ -78,6 +87,7 @@ if __name__ == '__main__':
     
     if args.naive:
         print "Naive Bayes classifier..."
+        util.pre_alg = "naive"
         from ml_lib.gaussian_naive_classifier import GaussianNaiveClassifier
         # Gaussian naive classifier
         gn_classifier = GaussianNaiveClassifier(X, Y, 2)
@@ -89,6 +99,7 @@ if __name__ == '__main__':
 
     if args.sklearn_perceptron:
         print "Scikit-learn Perceptron..."
+        util.pre_alg = "scikitperceptron"
         from sklearn.linear_model import Perceptron
         perceptron = Perceptron(tol=None, max_iter=300000)
         perceptron.fit(X, Y)
@@ -96,6 +107,7 @@ if __name__ == '__main__':
 
     if args.perceptron:
         print "Perceptron..."
+        util.pre_alg = "perceptron"
         from ml_lib.perceptron import Perceptron
 #         perceptron = Perceptron(X, Y, args.stochastic, 1, 300000, 0)
 #         print perceptron.classify(X, Y)
@@ -119,48 +131,28 @@ if __name__ == '__main__':
                                   split_points, create_classifier)
             
 
-#         Yp = np.zeros((Ya_test.shape[0], n))
-#         for i, spl in enumerate(split_points):
-#             if spl==-1: continue
-#             print "Splitting at %s" % (spl)
-#             Yb = np.zeros((Ya.shape[0]))
-#             Yb[Ya==i] = 1
-#             perceptron = Perceptron(X, Yb, args.stochastic,
-#                                     1, 300000, 0)
-#             print perceptron.classify(X, Yb)
-#              
-#             Yb_test = perceptron.predict(X_test)
-#             Yp[:, i] = Yb_test
-# 
-# #         for j in range(n):
-# #             if j >= i:
-# #                 Yp[:, j] -= Yb_test
-# #             else:
-# #                 Yp[:, j] += Yb_test
-#         Yp[:, 0] = -Yp[:, 1]
-#         Yguess = np.argmax(Yp, axis=1)
-#         c_matrix = np.zeros((n, n))
-#         for i in range(n):
-#             for j in range(n):
-#                 c_matrix[i, j] = np.sum(
-#                     np.logical_and((Yguess == j), (Ya_test == i)))
-#         print c_matrix
-
     if args.logistic:
         print "Logistic Regression..."
-        from ml_lib.logistic import Logistic
-        
+        util.pre_alg = "logistic"
+        from ml_lib.logistic import Logistic, prefix
         
         Ya = Y
         Ya_test = Y_test
         split_points = [-1, 0]
         n = len(split_points)
 
+        settings = {
+                'step_size': 0.01,
+                'max_steps': 15000,
+                'reg_constant': 0
+            }
         def create_classifier(X, Y):
-            logistic = Logistic(X, Y, step_size=0.01, max_steps=15000,
-                                reg_constant=0.05)
+            logistic = Logistic(X, Y,
+                                step_size=settings['step_size'],
+                                max_steps=settings['max_steps'],
+                                reg_constant=settings['reg_constant'])
             return logistic
-            
+        
         util.linear_multiclassify(X, Ya, X_test, Ya_test,
                                   split_points, create_classifier)
 
@@ -185,4 +177,19 @@ if __name__ == '__main__':
 #         x_range = range(len(test_acc))
 #         plt.plot(x_range, test_acc)
 #         plt.show()
+
+    if args.knn:
+        print "k-Nearest Neighbor..."
+        util.pre_alg = "knn"
+        from ml_lib.knn import KNN
+        
+        knn_classifier = KNN(X, Y, 10, 2)
+        # util.report_accuracy(gn_classifier.classify(X, Y, 0.5)[0])
+        util.report_accuracy(knn_classifier.classify(X_test, Y_test))
+
+        for k in range(10):
+            print "%s-NN" % (k+1)
+            knn_classifier = KNN(X, Y, 1+k, 2)
+            # util.report_accuracy(gn_classifier.classify(X, Y, 0.5)[0])
+            util.report_accuracy(knn_classifier.classify(X_test, Y_test))
 

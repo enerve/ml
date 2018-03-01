@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import heapq as hq
+import datetime
 
 
 # ------ Algorithm helpers ---------
@@ -34,7 +35,7 @@ def normalize(X, f_range=None, f_mean=None):
     return X, f_range, f_mean
 
 def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
-                         create_classifier):
+                         create_classifier, settings):
     n = len(split_points)
     print "Running linear multiclassifier on %s splits" %(n)
     print split_points
@@ -46,16 +47,21 @@ def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
         Yb = np.zeros((Ya.shape[0]))
         Yb[Ya>=i] = 1
         classifier = create_classifier(X, Yb)
-        print classifier.classify(X, Yb)
+        c_matrix = classifier.classify(X, Yb)
+        
+        log(str(i), prefix())
+        log_accuracy(c_matrix, prefix())
 
         Yp_i = classifier.predict(X_test)
         Yp[:, i] = Yp_i
         
         ### rmoeve?
-#         classifier.plot_likelihood_train(False)
-#         Yb_test = np.zeros(Ya_test.shape[0])
-#         Yb_test[Ya_test>=i] = 1
-#         classifier.plot_likelihood_test(X_test, Yb_test , True)
+        classifier.plot_likelihood_train(False, prefix() + str(i))
+        Yb_test = np.zeros(Ya_test.shape[0])
+        Yb_test[Ya_test>=i] = 1
+        classifier.plot_likelihood_test(X_test, Yb_test, True,
+                                        prefix() + str(i))
+        
         
     Yp[:, 0] = 1    #it's gotta be positive by definition.
 #             Yp[:, 0] = -Yp[:, 1]
@@ -80,12 +86,31 @@ def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
     accr = 0
     for i in range(n):
         accr += c_matrix[i, i]
-    print 'Overall test acc: %f%%' % (100 * accr / np.sum(c_matrix))
+        
+    log('Overall test acc: %f%%' % (100 * accr / np.sum(c_matrix)),
+               prefix())
+    
+    
+
 
 # ------ Drawing ---------
 
+pre_outputdir = None
+pre_dataset = None
+pre_portion = None
+pre_alg = None
+pre_norm = None
+
+def prefix():
+    return (pre_outputdir if pre_outputdir else '') + \
+        ("%s_"%pre_dataset if pre_dataset else '') + \
+        ("%s_"%pre_portion if pre_portion else '') + \
+        ("%s_"%pre_alg if pre_alg else '') + \
+        ("%s_"%pre_norm if pre_norm else '')
+
 def split_into_train_test_sets(X, Y, test_portion):
     # Split into Training and Testing sets    
+    pre_portion = test_portion
     train_idx=[]
     test_idx=[]
     for i in range(X.shape[0]):
@@ -214,4 +239,23 @@ def report_accuracy(c_matrix):
     print "Accuracy: %s%%" % (correct / np.sum(c_matrix))
     for c in c_matrix:
         print "\t", c
+        
     
+def log_accuracy(c_matrix, prefix=None):
+    str = "Accuracy: %f%%" % (100 * (c_matrix[0, 0] + c_matrix[1, 1]) 
+                              / np.sum(c_matrix))
+    log(str, prefix)
+
+def log(str, prefix=None):
+    print str
+    
+    fname = ("%s_"%prefix if prefix else '') \
+        + 'log.txt'
+    log_append(str, fname)
+    
+def log_append(msg, fname):
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ":  "
+    
+    with open(fname, "a") as logfile:
+        logfile.write(timestamp + msg + '\n')
+
