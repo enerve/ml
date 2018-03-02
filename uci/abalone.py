@@ -24,7 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', help='path to store output files')
     parser.add_argument('--test_portion',
                         help='Which portion to use as test set',
-                        default=1, type=int)
+                        default=0, type=int)
     parser.add_argument('--draw_classes_data', action='store_true')
     parser.add_argument('--draw_classes_histogram', action='store_true')
     parser.add_argument('--normalize', action='store_true')
@@ -33,6 +33,7 @@ if __name__ == '__main__':
     parser.add_argument('--perceptron', action='store_true')
     parser.add_argument('--stochastic', action='store_true')
     parser.add_argument('--logistic', action='store_true')
+    parser.add_argument('--knn', action='store_true')
     args = parser.parse_args()
 
     print "--- Abalone dataset ---"
@@ -56,7 +57,7 @@ if __name__ == '__main__':
         
     # X = util.select_features(X, [0, 1, 2, 3, 4, 5, 6, 7, 8])
 
-    Y = data[:, 8]
+    Y = data[:, 8].astype(int)
 
     util.pre_outputdir = args.output_dir
 
@@ -84,7 +85,7 @@ if __name__ == '__main__':
         print "Classes (%s) split at:" %(n)
         print split_points[1:]
 
-        Ya = np.zeros(Y.shape)
+        Ya = np.zeros(Y.shape, dtype=np.int16)
         for i, spl in enumerate(split_points):
             Ya[Y>spl] = i
 
@@ -92,7 +93,6 @@ if __name__ == '__main__':
         for i, spl in enumerate(split_points):
             Ya_test[Y_test>spl] = i
 
-#         print Ya==2
         print "Training set"
         print "  Class 0: ", np.sum(Ya == 0)
         print "  Class 1: ", np.sum(Ya == 1)
@@ -146,3 +146,17 @@ if __name__ == '__main__':
                 
             util.linear_multiclassify(X, Ya, X_test, Ya_test,
                                       split_points, create_classifier)
+
+        if args.knn:
+            print "k-Nearest Neighbor..."
+            util.pre_alg = "knn"
+            from ml_lib.knn import KNN
+            
+#             knn_classifier = KNN(X, Ya, 10, 3)
+#             util.report_accuracy(knn_classifier.classify(X_test, Ya_test))
+    
+            for k in range(10, 30):
+                print "%s-NN" % (k+1)
+                knn_classifier = KNN(X, Ya, 1+k, 3)
+                util.report_accuracy(knn_classifier.classify(X_test, Ya_test))
+

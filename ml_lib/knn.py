@@ -34,7 +34,7 @@ class KNN(object):
         C = self.Y[idx]
 #         freq = np.bincount(C[0:self.k-1, :])
         C = C[0:self.k, :]
-        
+                
         Yo = []
         for ynn in C.T:
             freq = np.bincount(ynn)

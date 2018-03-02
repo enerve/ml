@@ -150,40 +150,16 @@ if __name__ == '__main__':
         util.linear_multiclassify(X, Ya, X_test, Ya_test,
                                   split_points, create_classifier)
 
-#         logistic = Logistic(X, Y, step_size=0.01, max_steps=15000,
-#                             reg_constant=0.05)
-#         print logistic.classify(X, Y)
-#         logistic.plot_likelihood_train(False)
-#         logistic.plot_likelihood_test(X_test, Y_test, True)
-# #         print logistic.classify(X_test, Y_test)
-
-
-
-#         test_acc = []
-#         logistic = None
-#         for steps in range(10, 4010, 100):
-#             
-#             logistic = Logistic(X, Y, step_size=0.01, max_steps=steps,
-#                                 reg_constant=0.01)
-#             cm = logistic.classify(X_test, Y_test)
-#             test_acc.append((cm[0,0] + cm[1,1]) / Y_test.shape[0])
-#         lik_plt = logistic.plot_likelihood_train(False)
-#         x_range = range(len(test_acc))
-#         plt.plot(x_range, test_acc)
-#         plt.show()
-
     if args.knn:
         print "k-Nearest Neighbor..."
         util.pre_alg = "knn"
         from ml_lib.knn import KNN
         
         knn_classifier = KNN(X, Y, 10, 2)
-        # util.report_accuracy(gn_classifier.classify(X, Y, 0.5)[0])
         util.report_accuracy(knn_classifier.classify(X_test, Y_test))
 
-        for k in range(10):
-            print "%s-NN" % (k+1)
-            knn_classifier = KNN(X, Y, 1+k, 2)
-            # util.report_accuracy(gn_classifier.classify(X, Y, 0.5)[0])
-            util.report_accuracy(knn_classifier.classify(X_test, Y_test))
+#         for k in range(10):
+#             print "%s-NN" % (k+1)
+#             knn_classifier = KNN(X, Y, 1+k, 2)
+#             util.report_accuracy(knn_classifier.classify(X_test, Y_test))
 
