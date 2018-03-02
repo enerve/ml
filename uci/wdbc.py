@@ -32,7 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', help='path to store output files')
     parser.add_argument('--test_portion',
                         help='Which portion to use as test set',
-                        default=0, type=int)
+                        default=1, type=int)
     parser.add_argument('--draw_classes_data', action='store_true')
     parser.add_argument('--draw_classes_histogram', action='store_true')
     parser.add_argument('--normalize', action='store_true')
@@ -143,8 +143,8 @@ if __name__ == '__main__':
         n = len(split_points)
 
         def create_classifier(X, Y):
-            logistic = Logistic(X, Y, step_size=0.01, max_steps=15000,
-                                reg_constant=0.05)
+            logistic = Logistic(X, Y, step_size=0.001, max_steps=15000,
+                                reg_constant=1)
             return logistic
         
         util.linear_multiclassify(X, Ya, X_test, Ya_test,
