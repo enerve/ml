@@ -12,7 +12,7 @@ class KNN(object):
     '''
 
 
-    def __init__(self, X, Y, k, num_classes=2):
+    def __init__(self, X, Y, k, num_classes=2, dist_p=2):
         '''
         Constructor
         '''
@@ -20,13 +20,15 @@ class KNN(object):
         self.Y = Y
         self.k = k
         self.num_classes = num_classes
+        self.dist_p = dist_p
         
     def classify(self, X_test, Y_test):
         
         X1 = self.X[:, np.newaxis, :]
         X2 = X_test[np.newaxis, :, :]
 
-        D = np.square(X1 - X2)  # (train x / test x / features)
+        D = np.absolute(X1 - X2)
+        D = np.power(D, self.dist_p)  # (train x / test x / features)
         D = np.sum(D, axis=2)   # (train x / test x)
         
         idx = np.argpartition(D, self.k-1, axis=0)

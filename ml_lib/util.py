@@ -223,10 +223,14 @@ def draw_classes_data(X, Y, colA, colB):
 
 # ------ Logging/Debugging ---------
 
-def report_accuracy(c_matrix):
+def report_accuracy(c_matrix, display_matrix=True):
+    print "Accuracy: %s%%" % get_accuracy(c_matrix)
+    if display_matrix:
+        for c in c_matrix:
+            print "\t", c
+    
+def get_accuracy(c_matrix):
     correct = sum([c_matrix[i, i] for i in range(len(c_matrix[0]))])
     
-    print "Accuracy: %s%%" % (correct / np.sum(c_matrix))
-    for c in c_matrix:
-        print "\t", c
+    return (correct / np.sum(c_matrix))
     

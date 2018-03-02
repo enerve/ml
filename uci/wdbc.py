@@ -155,11 +155,14 @@ if __name__ == '__main__':
         util.pre_alg = "knn"
         from ml_lib.knn import KNN
         
-        knn_classifier = KNN(X, Y, 10, 2)
-        util.report_accuracy(knn_classifier.classify(X_test, Y_test))
+        k_range = 10
+        p_range = 6 # / 2.0
+        a_matrix = np.zeros((k_range, p_range))
+        for k in range(k_range):
+            print "%s-NN" % (k+1)
+            for p in range(p_range):
+                knn_classifier = KNN(X, Y, 1+k, dist_p=(p+1)/2.0)
+                a_matrix[k, p] = util.get_accuracy(
+                    knn_classifier.classify(X_test, Y_test))
 
-#         for k in range(10):
-#             print "%s-NN" % (k+1)
-#             knn_classifier = KNN(X, Y, 1+k, 2)
-#             util.report_accuracy(knn_classifier.classify(X_test, Y_test))
-
+        print a_matrix
