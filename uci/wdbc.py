@@ -24,7 +24,6 @@ def features_to_use():
     return feature_idx
 
 
-
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
@@ -32,7 +31,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', help='path to store output files')
     parser.add_argument('--test_portion',
                         help='Which portion to use as test set',
-                        default=1, type=int)
+                        default=2, type=int)
     parser.add_argument('--draw_classes_data', action='store_true')
     parser.add_argument('--draw_classes_histogram', action='store_true')
     parser.add_argument('--normalize', action='store_true')
@@ -43,6 +42,7 @@ if __name__ == '__main__':
     parser.add_argument('--stochastic', action='store_true')
     parser.add_argument('--logistic', action='store_true')
     parser.add_argument('--knn', action='store_true')
+    parser.add_argument('--svm', action='store_true')
     args = parser.parse_args()
     
     print "--- WDBC dataset ---"
@@ -166,3 +166,12 @@ if __name__ == '__main__':
                     knn_classifier.classify(X_test, Y_test))
 
         print a_matrix
+
+    if args.svm:
+        print "Support Vector Machine..."
+        util.pre_alg = "svm"
+        from ml_lib.svm import SVM
+        
+        svm_classifier = SVM(X, Y, 1)
+        util.report_accuracy(svm_classifier.classify(X_test, Y_test))
+
