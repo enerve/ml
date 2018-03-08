@@ -170,8 +170,8 @@ if __name__ == '__main__':
     if args.svm:
         print "Support Vector Machine..."
         util.pre_alg = "svm"
-        from ml_lib.svm import SVM
-        
-        svm_classifier = SVM(X, Y, 1)
+        from ml_lib.svm import SVM, RBFKernel
+
+        svm_classifier = SVM(X, Y, 1, kernel=RBFKernel(1))
         util.report_accuracy(svm_classifier.classify(X_test, Y_test))
 
