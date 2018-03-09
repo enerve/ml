@@ -24,7 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', help='path to store output files')
     parser.add_argument('--test_portion',
                         help='Which portion to use as test set',
-                        default=0, type=int)
+                        default=1, type=int)
     parser.add_argument('--draw_classes_data', action='store_true')
     parser.add_argument('--draw_classes_histogram', action='store_true')
     parser.add_argument('--normalize', action='store_true')
@@ -34,6 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('--stochastic', action='store_true')
     parser.add_argument('--logistic', action='store_true')
     parser.add_argument('--knn', action='store_true')
+    parser.add_argument('--svm', action='store_true')
     args = parser.parse_args()
 
     print "--- Abalone dataset ---"
@@ -127,9 +128,8 @@ if __name__ == '__main__':
             from ml_lib.perceptron import Perceptron
             
             def create_classifier(X, Y):
-                perceptron = Perceptron(X, Y, args.stochastic,
+                return Perceptron(X, Y, args.stochastic,
                                         1, 8000, 0)
-                return perceptron
             
             util.linear_multiclassify(X, Ya, X_test, Ya_test,
                                       split_points, create_classifier)
@@ -140,9 +140,8 @@ if __name__ == '__main__':
             from ml_lib.logistic import Logistic
             
             def create_classifier(X, Y):
-                logistic = Logistic(X, Y, step_size=0.001, max_steps=15000,
+                return Logistic(X, Y, step_size=0.001, max_steps=15000,
                                     reg_constant=0.01)
-                return logistic
                 
             util.linear_multiclassify(X, Ya, X_test, Ya_test,
                                       split_points, create_classifier)
@@ -160,3 +159,19 @@ if __name__ == '__main__':
                 knn_classifier = KNN(X, Ya, 1+k, 3)
                 util.report_accuracy(knn_classifier.classify(X_test, Ya_test))
 
+        if args.svm:
+            print "Support Vector Machine..."
+            util.pre_alg = "svm"
+            from ml_lib.svm import SVM, RBFKernel
+
+            def create_classifier(X, Y):
+                return SVM(X, Y, 10)
+                 
+#             Yb = np.zeros((Ya.shape[0]))
+#             Yb[Ya>=i] = 1
+#             svm_classifier = SVM(X, Yb, 1)#), kernel=RBFKernel(1))
+#             util.report_accuracy(svm_classifier.classify(X, Yb))
+#             util.report_accuracy(svm_classifier.classify(X_test, Y_test))
+
+            util.linear_multiclassify(X, Ya, X_test, Ya_test,
+                                       split_points, create_classifier)

@@ -137,21 +137,25 @@ class Logistic(object):
             plt.savefig(fname, bbox_inches='tight')
             plt.show()
 
+    def predict(self, X_test):
+        """ Predict class for the given data, and return for each, a quantity 
+            that is positive if class is 1 and that is proportional to the
+            likelihood of it being so.
+        """
+        if self.w is None: self.learn()
+        
+        Xt = np.append(np.ones((X_test.shape[0], 1)), X_test, axis=1)
+        return np.dot(Xt, self.w)
+
     def classify(self, X_test, Y_test):
         """ Classify the given test set using this logistic classifier.
             Returns confusion matrix of test result accuracy.
         """
-        if self.w is None: self.learn()
-        
-        c_matrix = np.asarray([[0, 0],[0,0]])
-
-        Xt = np.append(np.ones((X_test.shape[0], 1)), X_test, axis=1)
-        Yt = Y_test
-        
-        class_prediction = np.sign(np.dot(Xt, self.w))
+        class_prediction = np.sign(self.predict(X_test))
         class_prediction = ((class_prediction + 1) / 2).astype(int)
         
-        for i, y in enumerate(Yt):
+        c_matrix = np.asarray([[0, 0],[0,0]])
+        for i, y in enumerate(Y_test):
             c_matrix[y, class_prediction[i]] += 1
         
         print "Accuracy: %f%%" % (100 * (c_matrix[0, 0] + c_matrix[1, 1]) 
@@ -165,12 +169,3 @@ class Logistic(object):
             "r%s_"%self.reg_constant + \
             "s%s_"%self.max_steps
 
-    def predict(self, X_test):
-        """ Predict class for the given data, and return for each, a quantity 
-            that is positive if class is 1 and that is proportional to the
-            likelihood of it being so.
-        """
-        if self.w is None: self.learn()
-        
-        Xt = np.append(np.ones((X_test.shape[0], 1)), X_test, axis=1)
-        return np.dot(Xt, self.w)

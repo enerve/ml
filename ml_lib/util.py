@@ -52,10 +52,10 @@ def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
         Yp[:, i] = Yp_i
         
         ### rmoeve?
-        classifier.plot_likelihood_train(False, str(i))
-        Yb_test = np.zeros(Ya_test.shape[0])
-        Yb_test[Ya_test>=i] = 1
-        classifier.plot_likelihood_test(X_test, Yb_test, True, str(i))
+#         classifier.plot_likelihood_train(False, str(i))
+#         Yb_test = np.zeros(Ya_test.shape[0])
+#         Yb_test[Ya_test>=i] = 1
+#         classifier.plot_likelihood_test(X_test, Yb_test, True, str(i))
         
         
     Yp[:, 0] = 1    #it's gotta be positive by definition.
