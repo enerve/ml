@@ -8,15 +8,19 @@ from __future__ import division
 import numpy as np
 from cvxopt import matrix, solvers
 
-from sklearn import svm
+# from sklearn import svm
 
 class LinearKernel:
+    def __init__(self):
+        print "Linear kernel"
+
     def compute(self, X1, X2):
         ''' Creates a linear kernel matrix between rows of X1 and X2. '''
         return np.dot(X1, X2.T)
 
 class RBFKernel:
     def __init__(self, width):
+        print "RBF kernel"
         self.width = width
 
     def compute(self, X1, X2):
@@ -41,6 +45,7 @@ class SVM(object):
         self.X = X
         self.Y = Y
         self.lam = lam
+        print "SVM with lambda = %f" %(lam)
         
         self.alpha = None
         self.w0 = None
@@ -55,8 +60,8 @@ class SVM(object):
         Y = self.Y * 2 - 1
         Y_ = Y.reshape((n, 1))
 
-        self.lin_clf = svm.LinearSVC(loss='hinge')
-        self.lin_clf.fit(X, Y)
+#         self.lin_clf = svm.LinearSVC(loss='hinge')
+#         self.lin_clf.fit(X, Y)
         
         K = self.kernel.compute(X, X)
         
@@ -72,6 +77,8 @@ class SVM(object):
         A = matrix(Y.reshape((1, n)).astype(float))
         b = matrix([0.0])
         
+        print "...Learning..."
+        solvers.options['show_progress'] = False
         sol = solvers.qp(P, q, G, h, A, b)
 
         al = np.reshape(np.array(sol['x']), (n))
@@ -101,7 +108,7 @@ class SVM(object):
         """
         if self.alpha is None: self.learn()
 
-        dec = self.lin_clf.decision_function(X_test)
+#         dec = self.lin_clf.decision_function(X_test)
 
         print "w0: %f" %(self.w0)
 
@@ -113,13 +120,13 @@ class SVM(object):
         Kmn = self.kernel.compute(X0, X)
         ret = np.dot(Kmn, self.alpha * Y) + self.w0
         
-        df =  (ret - dec)
-        d2 = np.zeros(df.shape[0])
-        d2[df>0] = 1
-        print "Diff between Y predictions:"
-        print "  Average : %f off from %f" % (np.average(df), np.average(dec))
-        print "  Ratio   : %f " % (np.average(df / dec))
-        print "  #Greater: %s / %s" % (np.sum(d2), X_test.shape[0])
+#         df =  (ret - dec)
+#         d2 = np.zeros(df.shape[0])
+#         d2[ret*dec > 0] = 1
+#         print "Diff between Y predictions:"
+#         print "  Average : %f off from %f" % (np.average(df), np.average(dec))
+#         print "  Ratio   : %f " % (np.average(df / dec))
+#         print "  #match: %s / %s" % (np.sum(d2), X_test.shape[0])
         
         return ret
 

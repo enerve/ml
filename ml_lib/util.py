@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 import time
 import heapq as hq
 
-
 # ------ Algorithm helpers ---------
 
 
@@ -36,8 +35,8 @@ def normalize(X, f_range=None, f_mean=None):
 def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
                          create_classifier):
     n = len(split_points)
-    print "Running linear multiclassifier on %s splits" %(n)
-    print split_points
+#     print "Running linear multiclassifier on %s splits -----" %(n)
+#     print split_points
     
     Yp = np.zeros((Ya_test.shape[0], n))
     for i, spl in enumerate(split_points):
@@ -48,6 +47,9 @@ def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
         classifier = create_classifier(X, Yb)
         print classifier.classify(X, Yb)
 
+        Yb_test = np.zeros((Ya_test.shape[0]))
+        Yb_test[Ya_test>=i] = 1
+        report_accuracy(classifier.classify(X_test, Yb_test))
         Yp_i = classifier.predict(X_test)
         Yp[:, i] = Yp_i
         
@@ -73,6 +75,107 @@ def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
                 np.logical_and((Yguess == j), (Ya_test == i)))
     print 'Overall test acc: %f%%' % get_accuracy(c_matrix)
     print c_matrix
+    return c_matrix
+
+def onevsall_multiclassify(X, Ya, X_test, Ya_test, n, create_classifier):
+#     print "Running linear multiclassifier on %s splits -----" %(n)
+#     print split_points
+    
+    Yp = np.zeros((Ya_test.shape[0], n))
+    for i in range(n):
+        Yb = np.zeros((Ya.shape[0]))
+        Yb[Ya==i] = 1
+
+        classifier = create_classifier(X, Yb)
+        print classifier.classify(X, Yb)
+        
+        Yb_test = np.zeros((Ya_test.shape[0]))
+        Yb_test[Ya_test==i] = 1
+        print classifier.classify(X_test, Yb_test)
+
+        Yp_i = classifier.predict(X_test)
+        Yp[:, i] = Yp_i
+        
+#     print Yp.shape
+#     print Yp
+    Yguess = np.argmax(Yp, axis=1)
+
+    c_matrix = confusion_matrix(Ya_test, Yguess, n)    
+
+    print 'Overall test acc: %f%%' % get_accuracy(c_matrix)
+    print c_matrix
+    print "......."
+    print "......."
+    print "......."
+    
+    return c_matrix
+
+def onevsall_multiclassify_validation(X, Y, X_val, Y_val, n,
+                                      create_classifier_validated,
+                                      var1_list, var2_list):
+#     print "Running linear multiclassifier on %s splits -----" %(n)
+#     print split_points
+    
+    Yp = np.zeros((Y_val.shape[0], n))
+    
+    for i in range(n):
+        Yb = np.zeros((Y.shape[0]))
+        Yb[Y==i] = 1
+        Yb_val = np.zeros((Y_val.shape[0]))
+        Yb_val[Y_val==i] = 1
+        
+        max_accuracy = -1
+        best_classifier = None
+        # Try all variations on the variables
+        for var1 in var1_list:
+            print "============== var1 = %f ===========" %(var1)
+            for var2 in var2_list:
+                print "-------------- var2 = %f ----------" %(var2)
+                classifier = create_classifier_validated(var1, var2, X, Yb)
+                #print classifier.classify(X, Yb)
+                
+                cm_v = classifier.classify(X_val, Yb_val)
+                acc_v = get_accuracy(cm_v)
+                if acc_v > max_accuracy:
+                    max_accuracy = acc_v
+                    best_classifier = classifier
+                    print "*** Found better with %f%%" % acc_v
+                
+        print
+        print "============== DONE class %d ===============" % (i)
+        print
+        print "Best:"
+        print best_classifier.classify(X_val, Yb_val)
+        Yp_i = best_classifier.predict(X_val)
+        Yp[:, i] = Yp_i
+        
+    print "============== DONE ALL ==============="
+    print
+    Yguess = np.argmax(Yp, axis=1)
+
+    c_matrix = confusion_matrix(Y_val, Yguess, n)    
+
+    print 'Overall test acc: %f%%' % get_accuracy(c_matrix)
+    print c_matrix
+    print "......."
+    print "......."
+    print "......."
+    
+    return c_matrix
+
+
+# def find_best_setting(param_options, fn):
+#     max = float("-inf")
+#     max_param = None
+#     for param in param_options:
+#         ret = fn(param)
+#         if ret > max:
+#             max = ret
+#             max_param = param
+#     return (max, max_param)
+
+# def validate_settings(X, Y, X_test, Y_test, create_classifier):
+    
 
 # ------ Drawing ---------
 
@@ -89,21 +192,26 @@ def prefix():
         ("%s_"%pre_alg if pre_alg else '') + \
         ("%s_"%pre_norm if pre_norm else '')
 
-def split_into_train_test_sets(X, Y, test_portion):
-    # Split into Training and Testing sets    
+def split_into_train_test_sets(X, Y, test_portion, validation_portion):
+    # Split into Training and Testing sets
     pre_portion = test_portion
     train_idx=[]
     test_idx=[]
+    valid_idx=[]
     for i in range(X.shape[0]):
         if i % 4 == test_portion:
             test_idx.append(i)
+        elif (validation_portion is not None) and i % 4 == validation_portion:
+            valid_idx.append(i)
         else:
             train_idx.append(i)
     X_test = X[test_idx]
     Y_test = Y[test_idx]
+    X_valid = X[valid_idx]
+    Y_valid = Y[valid_idx]
     X = X[train_idx]
     Y = Y[train_idx]
-    return (X, Y, X_test, Y_test)
+    return (X, Y, X_test, Y_test, X_valid, Y_valid)
 
 def draw_class_histograms(X, Y, num_classes, col):
     for c in range(num_classes):
@@ -211,6 +319,16 @@ def draw_classes_data(X, Y, colA, colB):
     plt.show()
     return plt
 
+def plot_accuracy(acc, x_values, line_labels=None, pref=None):
+    plt.plot(x_values, acc, 'b-')
+    plt.xlabel('C or lambda')
+    plt.ylabel('Test accuracy')
+    fname = prefix() \
+        + ("%s_"%pref if pref else '') \
+        + 'val.png'
+    plt.savefig(fname, bbox_inches='tight')
+    print fname
+    plt.show()
 
 # ------ Logging/Debugging ---------
 
@@ -225,3 +343,10 @@ def get_accuracy(c_matrix):
     
     return 100 * (correct / np.sum(c_matrix))
     
+def confusion_matrix(Y_actual, Y_guess, n):
+    c_matrix = np.zeros((n, n))
+    for i in range(n):
+        for j in range(n):
+            c_matrix[i, j] = np.sum(
+                np.logical_and((Y_guess == j), (Y_actual == i)))
+    return c_matrix

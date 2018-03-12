@@ -7,7 +7,7 @@ from __future__ import division
 import numpy as np
 import ml_lib.util as util
 import argparse
-
+import math
 
 # Draw histograms for each column
 def draw_classes_histogram(X, Y):
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', help='path to store output files')
     parser.add_argument('--test_portion',
                         help='Which portion to use as test set',
-                        default=2, type=int)
+                        default=1, type=int)
     parser.add_argument('--draw_classes_data', action='store_true')
     parser.add_argument('--draw_classes_histogram', action='store_true')
     parser.add_argument('--normalize', action='store_true')
@@ -172,6 +172,19 @@ if __name__ == '__main__':
         util.pre_alg = "svm"
         from ml_lib.svm import SVM, RBFKernel
 
-        svm_classifier = SVM(X, Y, 1, kernel=RBFKernel(1))
-        util.report_accuracy(svm_classifier.classify(X_test, Y_test))
+        lam_val = []
+        for lam_pow in range(20):
+            lam_val.append(math.pow(1.2, lam_pow))
 
+        acc = np.zeros(len(lam_val))
+        for i, lam in enumerate(lam_val):
+            svm_classifier = SVM(X, Y, lam)#), kernel=RBFKernel(1))
+            #util.report_accuracy(svm_classifier.classify(X, Y))
+            cm = svm_classifier.classify(X_test, Y_test)
+            util.report_accuracy(cm)
+            acc[i] = util.get_accuracy(cm)
+
+        print "\nAccuracies found for lambda:"
+        for i, lam in enumerate(lam_val):
+            print "%f: \t%f" %(lam, acc[i])
+        util.plot_accuracy(acc, lam_val)
