@@ -110,11 +110,30 @@ def onevsall_multiclassify(X, Ya, X_test, Ya_test, n, create_classifier):
     
     return c_matrix
 
+def validate_for_best(acc_fn, var_list, depth=0):
+    if var_list is None:
+        return acc_fn()
+    
+    max_accuracy = -1
+    best_classifier = None
+    # Try all variations on the variables
+    for var in var_list:
+        if depth == 1:
+            print "============== var1 = %f ===========" %(var)
+        elif depth == 2:
+            print "-------------- var2 = %f -----------" %(var)
+        (classifier_v, acc_v) = acc_fn(var)
+        if acc_v > max_accuracy:
+            max_accuracy = acc_v
+            best_classifier = classifier_v
+            #print "  *** Found better with %f%%" % acc_v
+            
+    return (best_classifier, max_accuracy)
+
 def onevsall_multiclassify_validation(X, Y, X_val, Y_val, n,
                                       create_classifier_validated,
                                       var1_list, var2_list):
-#     print "Running linear multiclassifier on %s splits -----" %(n)
-#     print split_points
+    print "Running one vs all multiclassifier on %d classes -----" %(n)
     
     Yp = np.zeros((Y_val.shape[0], n))
     
@@ -124,23 +143,18 @@ def onevsall_multiclassify_validation(X, Y, X_val, Y_val, n,
         Yb_val = np.zeros((Y_val.shape[0]))
         Yb_val[Y_val==i] = 1
         
-        max_accuracy = -1
-        best_classifier = None
-        # Try all variations on the variables
-        for var1 in var1_list:
-            print "============== var1 = %f ===========" %(var1)
-            for var2 in var2_list:
-                print "-------------- var2 = %f ----------" %(var2)
-                classifier = create_classifier_validated(var1, var2, X, Yb)
-                #print classifier.classify(X, Yb)
-                
-                cm_v = classifier.classify(X_val, Yb_val)
-                acc_v = get_accuracy(cm_v)
-                if acc_v > max_accuracy:
-                    max_accuracy = acc_v
-                    best_classifier = classifier
-                    print "*** Found better with %f%%" % acc_v
-                
+        def classifier_and_accuracy(var1, var2):
+            classifier = create_classifier_validated(var1, var2, X, Yb)
+            cm_v = classifier.classify(X_val, Yb_val)
+            return (classifier, get_accuracy(cm_v))
+
+        best_classifier, acc = validate_for_best(
+            lambda var1: validate_for_best(
+                lambda var2, var1=var1:
+                    classifier_and_accuracy(var1=var1, var2=var2),
+                var2_list, 2),
+            var1_list, 1)
+
         print
         print "============== DONE class %d ===============" % (i)
         print
@@ -163,19 +177,6 @@ def onevsall_multiclassify_validation(X, Y, X_val, Y_val, n,
     
     return c_matrix
 
-
-# def find_best_setting(param_options, fn):
-#     max = float("-inf")
-#     max_param = None
-#     for param in param_options:
-#         ret = fn(param)
-#         if ret > max:
-#             max = ret
-#             max_param = param
-#     return (max, max_param)
-
-# def validate_settings(X, Y, X_test, Y_test, create_classifier):
-    
 
 # ------ Drawing ---------
 

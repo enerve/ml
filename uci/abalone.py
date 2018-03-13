@@ -200,7 +200,7 @@ if __name__ == '__main__':
 #                                                     kernel='rbf'))
 #             util.report_accuracy(cm)
             
-            lam_val = [math.pow(2, p-3) for p in range(8)]                 
+            lam_val = [math.pow(2, p-3) for p in range(8)]
 #             lam_val = [(p+1)/10 for p in range(8)]
             b_val = [(p+1)/10 for p in range(10)]
 
