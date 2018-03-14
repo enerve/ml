@@ -57,7 +57,7 @@ class Perceptron(object):
                 # just pick one randomly from M
                 M = [M[random.randint(0, len(M)-1)]]
 
-            grad = - np.sum((Yt[M] * Xt[M].T), axis=1) / len(M)
+            grad = -1 * np.sum((Yt[M] * Xt[M].T), axis=1) / len(M)
 
             if self.reg_constant > 0:
                 grad += self.reg_constant * w

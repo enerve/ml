@@ -183,68 +183,42 @@ if __name__ == '__main__':
             from ml_lib.svm import SVM, RBFKernel
             from ml_lib.svm_sk_svc import SVMSkSVC
             from ml_lib.svm_sk_linear import SVMSkLinear
-
+ 
 #             Yb = np.zeros((Ya.shape[0]))
 #             Yb[Ya>=i] = 1
 #             svm_classifier = SVM(X, Yb, 1)#), kernel=RBFKernel(1))
 #             util.report_accuracy(svm_classifier.classify(X, Yb))
 #             util.report_accuracy(svm_classifier.classify(X_test, Y_test))
-  
+   
 #             util.linear_multiclassify(X, Ya, X_valid, Ya_valid, split_points, 
 #                                       lambda X, Y, lam=1: SVMSkLinear(X, Y, lam))
-            
-#             cm = util.onevsall_multiclassify(
-# #                         X, Ya, X, Ya, len(split_points),
-#                 X, Ya, X_valid, Ya_valid, len(split_points),
-#                 lambda X, Y, lam=1000, b=0.1: SVMSkSVC(X, Y, lam, b,
-#                                                     kernel='rbf'))
-#             util.report_accuracy(cm)
-            
-            lam_val = [math.pow(2, p-3) for p in range(8)]
-#             lam_val = [(p+1)/10 for p in range(8)]
-            b_val = [(p+1)/10 for p in range(10)]
-
-            cm = util.onevsall_multiclassify_validation(
+             
+             
+            lam_val = [math.pow(1.5, p+1)*10 for p in range(7)]
+            b_val = [(p+1)/40 for p in range(27)]
+#             lam_val = [math.pow(1.2, p+1)*10 for p in range(27)]
+#             b_val = [(p+2)/20 for p in range(7)]
+             
+            cm, acc_list = util.onevsall_multiclassify_validation(
                 X, Ya, X_valid, Ya_valid, len(split_points),
-                lambda lam, b, X, Y: SVMSkSVC(X, Y, lam, b, kernel='rbf'),
+#                 lambda lam, b, X, Y: SVMSkSVC(X, Y, lam, b, kernel='rbf'),
+                lambda lam, b, X, Y: SVM(X, Y, lam, kernel=RBFKernel(b)),
                 lam_val, b_val)
-     
-#             acc = np.zeros((len(lam_val), len(b_val)))
-#             acc2 = np.zeros((len(lam_val), len(b_val)))
-#             for i, lam in enumerate(lam_val):
-#                 print "============== lam = %f ===========" %(lam)
-#                 for j, b in enumerate(b_val):
-#                     print "-------------- b = %f ----------" %(b)
-# #                     cm = util.onevsall_multiclassify(
-# #                         X, Ya, X_valid, Ya_valid, len(split_points),
-# #                         lambda X, Y, lam=lam, b=b: SVM(X, Y, lam,
-# #                                                        kernel=RBFKernel(b)))
-# #                     acc[i,j] = util.get_accuracy(cm)
-#                     cm = util.onevsall_multiclassify(
-# #                         X, Ya, X, Ya, len(split_points),
-#                         X, Ya, X_valid, Ya_valid, len(split_points),
-#                         lambda X, Y, lam=lam, b=b: SVMSkSVC(X, Y, lam, b,
-#                                                             kernel='rbf'))
-#  
-# #                     Yb = np.zeros((Ya.shape[0]))
-# #                     Yb[Ya==i] = 1
-# #                     classifier = create_classifier(X, Yb)
-# #                     print classifier.classify(X, Yb)
-# #                     Yp_i = classifier.predict(X_test)
-#                      
-#                     acc2[i,j] = util.get_accuracy(cm)
-#      
-#             print "\nAccuracies found for lambda:"
-#             print lam_val
-#             print b_val
-#             print acc
-#             print acc2
-#             tym = str(time.time() % 1000000)
-#             np.savetxt(util.prefix() + tym + "_cv.csv", acc,
-#                        delimiter=",", fmt='%.3f')
-#             np.savetxt(util.prefix() + tym + "_2_cv.csv", acc2,
-#                        delimiter=",", fmt='%.3f')
-# #             for i, lam in enumerate(lam_val):
-# #                 for j, b in enumerate(b_val):
-# #                     print "%f, %d: \t%f" %(lam, b, acc[i])
-# #             util.plot_accuracy(acc, lam_val)
+
+
+            
+            tym = str(int(round(time.time()) % 1000000))
+
+            for i in range(3):#len(acc_list)):
+                print "--- Class %d" %(i)
+                acc_matrix = np.array(acc_list[i])
+#                 acc_matrix = np.genfromtxt(util.prefix() + '995985.0' + "_cv_%d.csv" % (i),
+#                                            delimiter=",")
+                print acc_matrix
+                np.savetxt(util.prefix() + tym + "_cv_%d.csv" % (i),
+                           acc_matrix, delimiter=",", fmt='%.3f')
+                util.plot_accuracies(acc_matrix, b_val, "RBF width b",
+                                     lam_val, "class%d_b"%(i))
+#                 util.plot_accuracies(acc_matrix.T, lam_val, "Lambda (C)",
+#                                      b_val, "class%d_l"%(i))
+

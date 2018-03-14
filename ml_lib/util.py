@@ -110,25 +110,27 @@ def onevsall_multiclassify(X, Ya, X_test, Ya_test, n, create_classifier):
     
     return c_matrix
 
-def validate_for_best(acc_fn, var_list, depth=0):
+def validate_for_best(acc_fn, var_list, depth):
     if var_list is None:
         return acc_fn()
     
-    max_accuracy = -1
+    best_accuracy = -1
+    acc_list = []
     best_classifier = None
     # Try all variations on the variables
     for var in var_list:
-        if depth == 1:
+        if depth == 0:
             print "============== var1 = %f ===========" %(var)
-        elif depth == 2:
+        elif depth == 1:
             print "-------------- var2 = %f -----------" %(var)
-        (classifier_v, acc_v) = acc_fn(var)
-        if acc_v > max_accuracy:
-            max_accuracy = acc_v
+        (classifier_v, best_acc_v, acc_list_v) = acc_fn(var)
+        acc_list.append(acc_list_v)
+        if best_acc_v > best_accuracy:
+            best_accuracy = best_acc_v
             best_classifier = classifier_v
             #print "  *** Found better with %f%%" % acc_v
             
-    return (best_classifier, max_accuracy)
+    return (best_classifier, best_accuracy, acc_list)
 
 def onevsall_multiclassify_validation(X, Y, X_val, Y_val, n,
                                       create_classifier_validated,
@@ -137,6 +139,7 @@ def onevsall_multiclassify_validation(X, Y, X_val, Y_val, n,
     
     Yp = np.zeros((Y_val.shape[0], n))
     
+    acc_list = []
     for i in range(n):
         Yb = np.zeros((Y.shape[0]))
         Yb[Y==i] = 1
@@ -146,14 +149,16 @@ def onevsall_multiclassify_validation(X, Y, X_val, Y_val, n,
         def classifier_and_accuracy(var1, var2):
             classifier = create_classifier_validated(var1, var2, X, Yb)
             cm_v = classifier.classify(X_val, Yb_val)
-            return (classifier, get_accuracy(cm_v))
+            acc = get_accuracy(cm_v)
+            return (classifier, acc, acc)
 
-        best_classifier, acc = validate_for_best(
+        best_classifier, best_acc_v, acc_list_v = validate_for_best(
             lambda var1: validate_for_best(
                 lambda var2, var1=var1:
                     classifier_and_accuracy(var1=var1, var2=var2),
-                var2_list, 2),
-            var1_list, 1)
+                var2_list, 1),
+            var1_list, 0)
+        acc_list.append(acc_list_v)
 
         print
         print "============== DONE class %d ===============" % (i)
@@ -175,7 +180,7 @@ def onevsall_multiclassify_validation(X, Y, X_val, Y_val, n,
     print "......."
     print "......."
     
-    return c_matrix
+    return c_matrix, acc_list
 
 
 # ------ Drawing ---------
@@ -330,6 +335,21 @@ def plot_accuracy(acc, x_values, line_labels=None, pref=None):
     plt.savefig(fname, bbox_inches='tight')
     print fname
     plt.show()
+
+def plot_accuracies(acc_matrix, x_values, x_label, z_labels=None, pref=None):
+    for i, acc in enumerate(acc_matrix):
+        plt.plot(x_values, acc, '-', label="%0.2f" %(z_labels[i]))
+
+    plt.xlabel(x_label)
+    plt.ylabel('Validation accuracy')
+    fname = prefix() \
+        + ("%s_"%pref if pref else '') \
+        + 'val.png'
+    plt.legend(loc=4)
+    plt.savefig(fname, bbox_inches='tight')
+    print fname
+#     plt.show()
+    plt.clf() # clear figure
 
 # ------ Logging/Debugging ---------
 
