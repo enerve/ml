@@ -27,6 +27,12 @@ def normalize(X, f_range=None, f_mean=None):
     X -= f_mean
     return X, f_range, f_mean
 
+def normalize_all(X, X_test, X_valid):
+    X, f_range, f_mean = normalize(X)
+    X_test = normalize(X_test, f_range, f_mean)[0]
+    X_valid = normalize(X_valid, f_range, f_mean)[0]
+    return (X, X_test, X_valid)
+
 def split_into_train_test_sets(X, Y, test_portion, validation_portion):
     # Split into Training and Testing sets
     global pre_portion

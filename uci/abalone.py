@@ -13,6 +13,8 @@ from ml_lib.gaussian_naive_classifier import GaussianNaiveClassifier
 import ml_lib.util as util
 import ml_lib.data_util as data_util
 import ml_lib.helper as helper
+import ml_lib.cmd_line as cmd_line
+
 import math
 
 
@@ -23,27 +25,7 @@ def draw_classes_histogram(X, Y, num_classes):
 
 
 if __name__ == '__main__':
-    
-    parser = argparse.ArgumentParser()  
-    parser.add_argument('file', help='path to data file')
-    parser.add_argument('--output_dir', help='path to store output files')
-    parser.add_argument('--test_portion',
-                        help='Which portion to use as test set',
-                        default=1, type=int)
-    parser.add_argument('--validation_portion',
-                        help='Which portion to use as validation set',
-                        default=2, type=int)
-    parser.add_argument('--draw_classes_data', action='store_true')
-    parser.add_argument('--draw_classes_histogram', action='store_true')
-    parser.add_argument('--normalize', action='store_true')
-    parser.add_argument('--bayes', action='store_true')
-    parser.add_argument('--naive', action='store_true')
-    parser.add_argument('--perceptron', action='store_true')
-    parser.add_argument('--stochastic', action='store_true')
-    parser.add_argument('--logistic', action='store_true')
-    parser.add_argument('--knn', action='store_true')
-    parser.add_argument('--svm', action='store_true')
-    args = parser.parse_args()
+    args = cmd_line.parse_args()
 
     util.prefix_init()
 
@@ -88,9 +70,7 @@ if __name__ == '__main__':
     if args.normalize:
         print "Normalizing..."
         util.pre_norm = "n"
-        X, f_range, f_mean = data_util.normalize(X)
-        X_test = data_util.normalize(X_test, f_range, f_mean)[0]
-        X_valid = data_util.normalize(X_valid, f_range, f_mean)[0]
+        X, X_test, X_valid = data_util.normalize_all(X, X_test, X_valid)
 
     if True: # Classification
         split_points = [-1, 8, 10]

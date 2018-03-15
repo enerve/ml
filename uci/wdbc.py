@@ -8,6 +8,7 @@ import numpy as np
 import ml_lib.util as util
 import ml_lib.data_util as data_util
 import ml_lib.helper as helper
+import ml_lib.cmd_line as cmd_line
 
 import argparse
 import math
@@ -28,25 +29,7 @@ def features_to_use():
 
 
 if __name__ == '__main__':
-    
-    parser = argparse.ArgumentParser()
-    parser.add_argument('file', help='path to wdbc file')
-    parser.add_argument('--output_dir', help='path to store output files')
-    parser.add_argument('--test_portion',
-                        help='Which portion to use as test set',
-                        default=1, type=int)
-    parser.add_argument('--draw_classes_data', action='store_true')
-    parser.add_argument('--draw_classes_histogram', action='store_true')
-    parser.add_argument('--normalize', action='store_true')
-    parser.add_argument('--bayes', action='store_true')
-    parser.add_argument('--naive', action='store_true')
-    parser.add_argument('--perceptron', action='store_true')
-    parser.add_argument('--sklearn_perceptron', action='store_true')
-    parser.add_argument('--stochastic', action='store_true')
-    parser.add_argument('--logistic', action='store_true')
-    parser.add_argument('--knn', action='store_true')
-    parser.add_argument('--svm', action='store_true')
-    args = parser.parse_args()
+    args = cmd_line.parse_args()
     
     util.prefix_init()
 
@@ -58,8 +41,8 @@ if __name__ == '__main__':
     Y = data[:, 1].astype(int)
     X = data[:, features_to_use()]
 
-    X, Y, X_test, Y_test = data_util.split_into_train_test_sets(
-        X, Y, args.test_portion)
+    X, Y, X_test, Y_test, X_valid, Y_valid = \
+        data_util.split_into_train_test_sets(X, Y, args.test_portion, None)
     
     print X.shape, X_test.shape
 
@@ -68,8 +51,7 @@ if __name__ == '__main__':
     if args.normalize:
         print "Normalizing..."
         util.pre_norm = "n"
-        X, f_range, f_mean = data_util.normalize(X)
-        X_test = data_util.normalize(X_test, f_range, f_mean)[0]
+        X, X_test, X_valid = data_util.normalize_all(X, X_test, X_valid)
     
     if args.draw_classes_histogram:
         draw_classes_histogram(X, Y)
@@ -124,7 +106,6 @@ if __name__ == '__main__':
             X, Ya, X_test, Ya_test, split_points,
             lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 30000, 0))
             
-
     if args.logistic:
         print "Logistic Regression..."
         util.pre_alg = "logistic"
@@ -163,9 +144,7 @@ if __name__ == '__main__':
         util.pre_alg = "svm"
         from ml_lib.svm import SVM, RBFKernel
 
-        lam_val = []
-        for lam_pow in range(20):
-            lam_val.append(math.pow(1.2, lam_pow))
+        lam_val = [math.pow(1.2, p) for p in range(20)]
 
         acc = np.zeros(len(lam_val))
         for i, lam in enumerate(lam_val):

@@ -144,6 +144,7 @@ def onevsall_multiclassify_validation(X, Y, X_val, Y_val, n,
         print
         print "Best:"
         print best_classifier.classify(X_val, Yb_val)
+        
         Yp_i = best_classifier.predict(X_val)
         Yp[:, i] = Yp_i
         
