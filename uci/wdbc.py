@@ -6,6 +6,9 @@ from __future__ import division
 
 import numpy as np
 import ml_lib.util as util
+import ml_lib.data_util as data_util
+import ml_lib.helper as helper
+
 import argparse
 import math
 
@@ -45,6 +48,8 @@ if __name__ == '__main__':
     parser.add_argument('--svm', action='store_true')
     args = parser.parse_args()
     
+    util.prefix_init()
+
     print "--- WDBC dataset ---"
     util.pre_dataset = "wdbc"
 
@@ -53,8 +58,8 @@ if __name__ == '__main__':
     Y = data[:, 1].astype(int)
     X = data[:, features_to_use()]
 
-    X, Y, X_test, Y_test = util.split_into_train_test_sets(X, Y,
-                                                           args.test_portion)
+    X, Y, X_test, Y_test = data_util.split_into_train_test_sets(
+        X, Y, args.test_portion)
     
     print X.shape, X_test.shape
 
@@ -63,8 +68,8 @@ if __name__ == '__main__':
     if args.normalize:
         print "Normalizing..."
         util.pre_norm = "n"
-        X, f_range, f_mean = util.normalize(X)
-        X_test = util.normalize(X_test, f_range, f_mean)[0]
+        X, f_range, f_mean = data_util.normalize(X)
+        X_test = data_util.normalize(X_test, f_range, f_mean)[0]
     
     if args.draw_classes_histogram:
         draw_classes_histogram(X, Y)
@@ -109,26 +114,15 @@ if __name__ == '__main__':
         print "Perceptron..."
         util.pre_alg = "perceptron"
         from ml_lib.perceptron import Perceptron
-#         perceptron = Perceptron(X, Y, args.stochastic, 1, 300000, 0)
-#         print perceptron.classify(X, Y)
-#         print perceptron.classify(X_test, Y_test)
 
-#     if args.perceptron:
-#         print "Multiclass Perceptron..."
-#         from ml_lib.perceptron import Perceptron
-#         
         Ya = Y
         Ya_test = Y_test
         split_points = [-1, 0]
         n = len(split_points)
         
-        def create_classifier(X, Y):
-            perceptron = Perceptron(X, Y, args.stochastic,
-                                    1, 30000, 0)
-            return perceptron
-            
-        util.linear_multiclassify(X, Ya, X_test, Ya_test,
-                                  split_points, create_classifier)
+        helper.linear_multiclassify(
+            X, Ya, X_test, Ya_test, split_points,
+            lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 30000, 0))
             
 
     if args.logistic:
@@ -142,13 +136,10 @@ if __name__ == '__main__':
         split_points = [-1, 0]
         n = len(split_points)
 
-        def create_classifier(X, Y):
-            logistic = Logistic(X, Y, step_size=0.001, max_steps=15000,
-                                reg_constant=1)
-            return logistic
-        
-        util.linear_multiclassify(X, Ya, X_test, Ya_test,
-                                  split_points, create_classifier)
+        helper.linear_multiclassify(
+            X, Ya, X_test, Ya_test, split_points,
+            lambda X, Y: Logistic(X, Y, step_size=0.001, max_steps=15000,
+                                  reg_constant=1))
 
     if args.knn:
         print "k-Nearest Neighbor..."

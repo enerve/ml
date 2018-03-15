@@ -1,6 +1,9 @@
 '''
 Created on Jan 25, 2018
 
+Utility methods to deal with results, display on screen, in figures or 
+output to files
+
 @author: erw
 '''
 from __future__ import division
@@ -10,177 +13,6 @@ import matplotlib.pyplot as plt
 import time
 import heapq as hq
 
-# ------ Algorithm helpers ---------
-
-
-def select_features(X, feature_ids):
-    X_selected = np.zeros((X.shape[0], 1))
-    for col in feature_ids:
-        X_selected = np.append(X_selected, X[:, col:(col+1)], axis=1)
-    return X_selected[:, 1:]
-
-def append_feature(V, X):
-    return np.append(X, np.reshape(V, (V.shape[0], 1)), axis=1)
-
-def normalize(X, f_range=None, f_mean=None):
-    if f_range is None:
-        f_range = np.max(X, axis=0) - np.min(X, axis=0)
-    X = X / f_range
-#     print (f_range * 100).astype(int)
-    if f_mean is None:
-        f_mean = np.mean(X)
-    X -= f_mean
-    return X, f_range, f_mean
-
-def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
-                         create_classifier):
-    n = len(split_points)
-#     print "Running linear multiclassifier on %s splits -----" %(n)
-#     print split_points
-    
-    Yp = np.zeros((Ya_test.shape[0], n))
-    for i, spl in enumerate(split_points):
-        if spl==-1: continue
-        print "Splitting at %s" % (spl)
-        Yb = np.zeros((Ya.shape[0]))
-        Yb[Ya>=i] = 1
-        classifier = create_classifier(X, Yb)
-        print classifier.classify(X, Yb)
-
-        Yb_test = np.zeros((Ya_test.shape[0]))
-        Yb_test[Ya_test>=i] = 1
-        report_accuracy(classifier.classify(X_test, Yb_test))
-        Yp_i = classifier.predict(X_test)
-        Yp[:, i] = Yp_i
-        
-        ### rmoeve?
-#         classifier.plot_likelihood_train(False, str(i))
-#         Yb_test = np.zeros(Ya_test.shape[0])
-#         Yb_test[Ya_test>=i] = 1
-#         classifier.plot_likelihood_test(X_test, Yb_test, True, str(i))
-        
-        
-    Yp[:, 0] = 1    #it's gotta be positive by definition.
-
-    for i in range(n-1):
-        Yp[:, i] *= Yp[:, i+1]
-    Yp[:, n-1] = - Yp[:, n-1] # pretend n+1 col wudve been negative
-
-    Yguess = np.argmin(Yp, axis=1)
-    
-    c_matrix = np.zeros((n, n))
-    for i in range(n):
-        for j in range(n):
-            c_matrix[i, j] = np.sum(
-                np.logical_and((Yguess == j), (Ya_test == i)))
-    print 'Overall test acc: %f%%' % get_accuracy(c_matrix)
-    print c_matrix
-    return c_matrix
-
-def onevsall_multiclassify(X, Ya, X_test, Ya_test, n, create_classifier):
-#     print "Running linear multiclassifier on %s splits -----" %(n)
-#     print split_points
-    
-    Yp = np.zeros((Ya_test.shape[0], n))
-    for i in range(n):
-        Yb = np.zeros((Ya.shape[0]))
-        Yb[Ya==i] = 1
-
-        classifier = create_classifier(X, Yb)
-        print classifier.classify(X, Yb)
-        
-        Yb_test = np.zeros((Ya_test.shape[0]))
-        Yb_test[Ya_test==i] = 1
-        print classifier.classify(X_test, Yb_test)
-
-        Yp_i = classifier.predict(X_test)
-        Yp[:, i] = Yp_i
-        
-#     print Yp.shape
-#     print Yp
-    Yguess = np.argmax(Yp, axis=1)
-
-    c_matrix = confusion_matrix(Ya_test, Yguess, n)    
-
-    print 'Overall test acc: %f%%' % get_accuracy(c_matrix)
-    print c_matrix
-    print "......."
-    print "......."
-    print "......."
-    
-    return c_matrix
-
-def validate_for_best(acc_fn, var_list, depth):
-    if var_list is None:
-        return acc_fn()
-    
-    best_accuracy = -1
-    acc_list = []
-    best_classifier = None
-    # Try all variations on the variables
-    for var in var_list:
-        if depth == 0:
-            print "============== var1 = %f ===========" %(var)
-        elif depth == 1:
-            print "-------------- var2 = %f -----------" %(var)
-        (classifier_v, best_acc_v, acc_list_v) = acc_fn(var)
-        acc_list.append(acc_list_v)
-        if best_acc_v > best_accuracy:
-            best_accuracy = best_acc_v
-            best_classifier = classifier_v
-            #print "  *** Found better with %f%%" % acc_v
-            
-    return (best_classifier, best_accuracy, acc_list)
-
-def onevsall_multiclassify_validation(X, Y, X_val, Y_val, n,
-                                      create_classifier_validated,
-                                      var1_list, var2_list):
-    print "Running one vs all multiclassifier on %d classes -----" %(n)
-    
-    Yp = np.zeros((Y_val.shape[0], n))
-    
-    acc_list = []
-    for i in range(n):
-        Yb = np.zeros((Y.shape[0]))
-        Yb[Y==i] = 1
-        Yb_val = np.zeros((Y_val.shape[0]))
-        Yb_val[Y_val==i] = 1
-        
-        def classifier_and_accuracy(var1, var2):
-            classifier = create_classifier_validated(var1, var2, X, Yb)
-            cm_v = classifier.classify(X_val, Yb_val)
-            acc = get_accuracy(cm_v)
-            return (classifier, acc, acc)
-
-        best_classifier, best_acc_v, acc_list_v = validate_for_best(
-            lambda var1: validate_for_best(
-                lambda var2, var1=var1:
-                    classifier_and_accuracy(var1=var1, var2=var2),
-                var2_list, 1),
-            var1_list, 0)
-        acc_list.append(acc_list_v)
-
-        print
-        print "============== DONE class %d ===============" % (i)
-        print
-        print "Best:"
-        print best_classifier.classify(X_val, Yb_val)
-        Yp_i = best_classifier.predict(X_val)
-        Yp[:, i] = Yp_i
-        
-    print "============== DONE ALL ==============="
-    print
-    Yguess = np.argmax(Yp, axis=1)
-
-    c_matrix = confusion_matrix(Y_val, Yguess, n)    
-
-    print 'Overall test acc: %f%%' % get_accuracy(c_matrix)
-    print c_matrix
-    print "......."
-    print "......."
-    print "......."
-    
-    return c_matrix, acc_list
 
 
 # ------ Drawing ---------
@@ -190,34 +22,21 @@ pre_dataset = None
 pre_portion = None
 pre_alg = None
 pre_norm = None
+pre_tym = None
+
+def prefix_init():
+    global pre_tym
+    pre_tym = str(int(round(time.time()) % 1000000))
+    print "initializing tym to %s" %(pre_tym)
 
 def prefix():
     return (pre_outputdir if pre_outputdir else '') + \
         ("%s_"%pre_dataset if pre_dataset else '') + \
         ("%s_"%pre_portion if pre_portion else '') + \
         ("%s_"%pre_alg if pre_alg else '') + \
+        ("%s_"%pre_tym if pre_tym else '') + \
         ("%s_"%pre_norm if pre_norm else '')
 
-def split_into_train_test_sets(X, Y, test_portion, validation_portion):
-    # Split into Training and Testing sets
-    pre_portion = test_portion
-    train_idx=[]
-    test_idx=[]
-    valid_idx=[]
-    for i in range(X.shape[0]):
-        if i % 4 == test_portion:
-            test_idx.append(i)
-        elif (validation_portion is not None) and i % 4 == validation_portion:
-            valid_idx.append(i)
-        else:
-            train_idx.append(i)
-    X_test = X[test_idx]
-    Y_test = Y[test_idx]
-    X_valid = X[valid_idx]
-    Y_valid = Y[valid_idx]
-    X = X[train_idx]
-    Y = Y[train_idx]
-    return (X, Y, X_test, Y_test, X_valid, Y_valid)
 
 def draw_class_histograms(X, Y, num_classes, col):
     for c in range(num_classes):
