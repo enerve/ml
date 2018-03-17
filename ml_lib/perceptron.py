@@ -109,8 +109,8 @@ class Perceptron(object):
         for i, y in enumerate(Yt):
             c_matrix[y, class_prediction[i]] += 1
         
-        print "Accuracy: %f%%" % (100 * (c_matrix[0, 0] + c_matrix[1, 1]) 
-                                  / np.sum(c_matrix))
+#         print "Accuracy: %f%%" % (100 * (c_matrix[0, 0] + c_matrix[1, 1]) 
+#                                   / np.sum(c_matrix))
         return c_matrix
     
     def predict(self, X_test):

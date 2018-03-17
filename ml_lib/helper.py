@@ -9,7 +9,7 @@ cross validation and multiclass classification.
 
 import numpy as np
 
-import util
+import ml_lib.util as util
 
 def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
                          create_classifier):
@@ -55,6 +55,38 @@ def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
     print 'Overall test acc: %f%%' % util.get_accuracy(c_matrix)
     print c_matrix
     return c_matrix
+
+def onevsone_multiclassify(X, Y, X_test, Y_test, num_classes,
+                           create_classifier):
+
+    Yp = np.zeros((Y_test.shape[0], num_classes, num_classes))
+    for i in range(num_classes - 1):
+        for j in range(i+1, num_classes):
+            print "Classifying %s vs %s" % (i, j)
+            id_ij = np.logical_or(Y == i, Y == j)
+            n_ij = np.sum(id_ij)
+            Xa = X[id_ij]
+            Ya = Y[id_ij]
+            Yb = np.zeros(n_ij)
+            Yb[Ya==i] = 1
+
+            classifier = create_classifier(Xa, Yb)
+            Yp[:, i, j] = classifier.predict(X_test)
+            Yp[:, j, i] = -Yp[:, i, j]
+
+    Yp = np.sum(Yp, axis=2)
+    Y_guess = np.argmax(Yp, axis=1)
+    
+    c_matrix = util.confusion_matrix(Y_test, Y_guess, num_classes)    
+
+    print 'Overall test acc: %f%%' % util.get_accuracy(c_matrix)
+    print c_matrix
+    print "......."
+    print "......."
+    print "......."
+    
+    return c_matrix
+
 
 def onevsall_multiclassify(X, Ya, X_test, Ya_test, n, create_classifier):
 #     print "Running linear multiclassifier on %s splits -----" %(n)

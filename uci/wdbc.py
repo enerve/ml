@@ -105,6 +105,9 @@ if __name__ == '__main__':
         helper.linear_multiclassify(
             X, Ya, X_test, Ya_test, split_points,
             lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 30000, 0))
+        helper.onevsone_multiclassify(
+            X, Ya, X_test, Ya_test, len(split_points),
+            lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 30000, 0))
             
     if args.logistic:
         print "Logistic Regression..."
@@ -121,6 +124,11 @@ if __name__ == '__main__':
             X, Ya, X_test, Ya_test, split_points,
             lambda X, Y: Logistic(X, Y, step_size=0.001, max_steps=15000,
                                   reg_constant=1))
+        helper.onevsone_multiclassify(
+            X, Ya, X_test, Ya_test, len(split_points),
+            lambda X, Y: Logistic(X, Y, step_size=0.001, max_steps=15000,
+                                  reg_constant=1))
+        
 
     if args.knn:
         print "k-Nearest Neighbor..."

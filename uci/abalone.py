@@ -131,14 +131,21 @@ if __name__ == '__main__':
             helper.linear_multiclassify(
                 X, Ya, X_test, Ya_test, split_points,
                 lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 8000, 0))
+#             helper.onevsone_multiclassify(
+#                 X, Ya, X_test, Ya_test, len(split_points),
+#                 lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 8000, 0))
             
         if args.logistic:
             print "Logistic Regression..."
             util.pre_alg = "logistic"
             from ml_lib.logistic import Logistic
             
-            helper.linear_multiclassify(
-                X, Ya, X_test, Ya_test, split_points,
+#             helper.linear_multiclassify(
+#                 X, Ya, X_test, Ya_test, split_points,
+#                 lambda X, Y: Logistic(X, Y, step_size=0.001, max_steps=15000,
+#                                       reg_constant=0.01))
+            helper.onevsone_multiclassify(
+                X, Ya, X_test, Ya_test, len(split_points),
                 lambda X, Y: Logistic(X, Y, step_size=0.001, max_steps=15000,
                                       reg_constant=0.01))
 
