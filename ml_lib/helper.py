@@ -11,16 +11,11 @@ import numpy as np
 
 import ml_lib.util as util
 
-def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
+def linear_multiclassify(X, Ya, X_test, Ya_test, num_classes,
                          create_classifier):
-    n = len(split_points)
-#     print "Running linear multiclassifier on %s splits -----" %(n)
-#     print split_points
     
-    Yp = np.zeros((Ya_test.shape[0], n))
-    for i, spl in enumerate(split_points):
-        if spl==-1: continue
-        print "Splitting at %s" % (spl)
+    Yp = np.zeros((Ya_test.shape[0], num_classes))
+    for i in range(1, num_classes):
         Yb = np.zeros((Ya.shape[0]))
         Yb[Ya>=i] = 1
         classifier = create_classifier(X, Yb)
@@ -38,20 +33,15 @@ def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
 #         Yb_test[Ya_test>=i] = 1
 #         classifier.plot_likelihood_test(X_test, Yb_test, True, str(i))
         
-        
     Yp[:, 0] = 1    #it's gotta be positive by definition.
 
-    for i in range(n-1):
+    for i in range(num_classes-1):
         Yp[:, i] *= Yp[:, i+1]
-    Yp[:, n-1] = - Yp[:, n-1] # pretend n+1 col wudve been negative
+    Yp[:, num_classes-1] = - Yp[:, num_classes-1] # pretend n+1 col wudve been negative
 
-    Yguess = np.argmin(Yp, axis=1)
+    Y_guess = np.argmin(Yp, axis=1)
     
-    c_matrix = np.zeros((n, n))
-    for i in range(n):
-        for j in range(n):
-            c_matrix[i, j] = np.sum(
-                np.logical_and((Yguess == j), (Ya_test == i)))
+    c_matrix = util.confusion_matrix(Ya_test, Y_guess, num_classes)
     print 'Overall test acc: %f%%' % util.get_accuracy(c_matrix)
     print c_matrix
     return c_matrix

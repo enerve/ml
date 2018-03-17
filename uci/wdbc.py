@@ -41,8 +41,8 @@ if __name__ == '__main__':
     Y = data[:, 1].astype(int)
     X = data[:, features_to_use()]
 
-    X, Y, X_test, Y_test, X_valid, Y_valid = \
-        data_util.split_into_train_test_sets(X, Y, args.test_portion, None)
+    X, Y, X_valid, Y_valid, X_test, Y_test = \
+        data_util.split_into_train_test_sets(X, Y, None, args.test_portion)
     
     print X.shape, X_test.shape
 
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     if args.normalize:
         print "Normalizing..."
         util.pre_norm = "n"
-        X, X_test, X_valid = data_util.normalize_all(X, X_test, X_valid)
+        X, X_valid, X_test = data_util.normalize_all(X, X_valid, X_test)
     
     if args.draw_classes_histogram:
         draw_classes_histogram(X, Y)
@@ -102,9 +102,6 @@ if __name__ == '__main__':
         split_points = [-1, 0]
         n = len(split_points)
         
-        helper.linear_multiclassify(
-            X, Ya, X_test, Ya_test, split_points,
-            lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 30000, 0))
         helper.onevsone_multiclassify(
             X, Ya, X_test, Ya_test, len(split_points),
             lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 30000, 0))
@@ -120,10 +117,6 @@ if __name__ == '__main__':
         split_points = [-1, 0]
         n = len(split_points)
 
-        helper.linear_multiclassify(
-            X, Ya, X_test, Ya_test, split_points,
-            lambda X, Y: Logistic(X, Y, step_size=0.001, max_steps=15000,
-                                  reg_constant=1))
         helper.onevsone_multiclassify(
             X, Ya, X_test, Ya_test, len(split_points),
             lambda X, Y: Logistic(X, Y, step_size=0.001, max_steps=15000,

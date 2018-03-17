@@ -58,57 +58,37 @@ if __name__ == '__main__':
     print "  Females: ", np.sum(X[:,1])
     print "  Infants: ", np.sum(X[:,2])
     
-    X, Y, X_test, Y_test, X_valid, Y_valid = \
+    X, Y, X_valid, Y_valid, X_test, Y_test = \
         data_util.split_into_train_test_sets(
-            X, Y, args.test_portion, args.validation_portion)
+            X, Y, args.validation_portion, args.test_portion)
     
     print "Training dataset:   %s" % (X.shape, )
-    print "Testing dataset(%d): %s" % (args.test_portion, X_test.shape)
     print "Validation dataset(%d): %s" % (args.validation_portion,
                                           X_valid.shape)
+    print "Testing dataset(%d): %s" % (args.test_portion, X_test.shape)
 
     if args.normalize:
         print "Normalizing..."
         util.pre_norm = "n"
-        X, X_test, X_valid = data_util.normalize_all(X, X_test, X_valid)
+        X, X_valid, X_test = data_util.normalize_all(X, X_valid, X_test)
 
     if True: # Classification
         split_points = [-1, 8, 10]
-        n = len(split_points)
-        print "Classes (%s) split at:" %(n)
-        print split_points[1:]
 
-        Ya = np.zeros(Y.shape, dtype=np.int16)
-        for i, spl in enumerate(split_points):
-            Ya[Y>spl] = i
-
-        Ya_test = np.zeros(Y_test.shape)
-        for i, spl in enumerate(split_points):
-            Ya_test[Y_test>spl] = i
-
-        Ya_valid = np.zeros(Y_valid.shape)
-        for i, spl in enumerate(split_points):
-            Ya_valid[Y_valid>spl] = i
-
-        print "Training set"
-        print "  Class 0: ", np.sum(Ya == 0)
-        print "  Class 1: ", np.sum(Ya == 1)
-        print "  Class 2: ", np.sum(Ya == 2)
-
-        print "Validation set"
-        print "  Class 0: ", np.sum(Ya_valid == 0)
-        print "  Class 1: ", np.sum(Ya_valid == 1)
-        print "  Class 2: ", np.sum(Ya_valid == 2)
+        Ya, Ya_valid, Ya_test = data_util.bucketify(Y, Y_valid, Y_test,
+                                                    split_points)
+        data_util.describe_classes(Ya, Ya_valid, Ya_test)
+        num_classes = len(split_points)
 
         if args.draw_classes_histogram:
-            draw_classes_histogram(X, Ya, n)
+            draw_classes_histogram(X, Ya, num_classes)
 
         if args.bayes:
             print "Bayes classifier..."
             util.pre_alg = "bayes"
             # Gaussian plug-in classifier
             
-            gpi_classifier = GaussianPlugInClassifier(X, Ya, n)
+            gpi_classifier = GaussianPlugInClassifier(X, Ya, num_classes)
                 
             # util.report_accuracy(gpi_classifier.classify(X, Y, 0.5)[0])
             util.report_accuracy(gpi_classifier.classify(X_test, Ya_test)[0])
@@ -118,7 +98,7 @@ if __name__ == '__main__':
             util.pre_alg = "naive"
             # Gaussian naive bayes classifier
             
-            naive_classifier = GaussianNaiveClassifier(X, Ya, n)
+            naive_classifier = GaussianNaiveClassifier(X, Ya, num_classes)
             
             # util.report_accuracy(gpi_classifier.classify(X, Y, 0.5)[0])
             util.report_accuracy(naive_classifier.classify(X_test, Ya_test)[0])
@@ -128,24 +108,17 @@ if __name__ == '__main__':
             util.pre_alg = "perceptron"
             from ml_lib.perceptron import Perceptron
             
-            helper.linear_multiclassify(
-                X, Ya, X_test, Ya_test, split_points,
+            helper.onevsone_multiclassify(
+                X, Ya, X_test, Ya_test, num_classes,
                 lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 8000, 0))
-#             helper.onevsone_multiclassify(
-#                 X, Ya, X_test, Ya_test, len(split_points),
-#                 lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 8000, 0))
             
         if args.logistic:
             print "Logistic Regression..."
             util.pre_alg = "logistic"
             from ml_lib.logistic import Logistic
             
-#             helper.linear_multiclassify(
-#                 X, Ya, X_test, Ya_test, split_points,
-#                 lambda X, Y: Logistic(X, Y, step_size=0.001, max_steps=15000,
-#                                       reg_constant=0.01))
             helper.onevsone_multiclassify(
-                X, Ya, X_test, Ya_test, len(split_points),
+                X, Ya, X_test, Ya_test, num_classes,
                 lambda X, Y: Logistic(X, Y, step_size=0.001, max_steps=15000,
                                       reg_constant=0.01))
 
@@ -154,13 +127,15 @@ if __name__ == '__main__':
             util.pre_alg = "knn"
             from ml_lib.knn import KNN
             
-#             knn_classifier = KNN(X, Ya, 10, 3)
-#             util.report_accuracy(knn_classifier.classify(X_test, Ya_test))
+            run_single_classifier = False
+            if run_single_classifier: 
+                knn_classifier = KNN(X, Ya, 10, 3)
+                util.report_accuracy(knn_classifier.classify(X_test, Ya_test))
     
             for k in range(10, 30):
                 print "%s-NN" % (k+1)
                 knn_classifier = KNN(X, Ya, 1+k, 3)
-                util.report_accuracy(knn_classifier.classify(X_test, Ya_test))
+                util.report_accuracy(knn_classifier.classify(X_valid, Ya_valid))
 
         if args.svm:
             print "Support Vector Machine..."
@@ -171,43 +146,50 @@ if __name__ == '__main__':
 
             run_single_classifier = False
             if run_single_classifier: 
+                i = 1
                 Yb = np.zeros((Ya.shape[0]))
                 Yb[Ya>=i] = 1
                 svm_classifier = SVM(X, Yb, 1)#), kernel=RBFKernel(1))
                 util.report_accuracy(svm_classifier.classify(X, Yb))
                 util.report_accuracy(svm_classifier.classify(X_test, Y_test))
-        
-                helper.linear_multiclassify(
-                    X, Ya, X_valid, Ya_valid, split_points,
-                    lambda X, Y, lam=1: SVMSkLinear(X, Y, lam))
-             
-             
-            lam_val = [math.pow(1.5, p+1)*10 for p in range(7)]
-            b_val = [(p+1)/40 for p in range(27)]
-#             lam_val = [math.pow(1.2, p+1)*10 for p in range(27)]
-#             b_val = [(p+2)/20 for p in range(7)]
-            
-            lmbd_sk = lambda lam, b, X, Y: SVMSkSVC(X, Y, lam, b, kernel='rbf')
-            lmbd_my = lambda lam, b, X, Y: SVM(X, Y, lam, kernel=RBFKernel(b))
 
-            pre_svm_alg = "sk" #"ny"
-            
-            cm, acc_list = helper.onevsall_multiclassify_validation(
-                X, Ya, X_valid, Ya_valid, len(split_points),
-                lmbd_sk if pre_svm_alg=="sk" else lmbd_my,
-                lam_val, b_val)
-
-            
-            for i in range(3):#len(acc_list)):
-                print "--- Class %d" %(i)
-                acc_matrix = np.array(acc_list[i])
-#                 acc_matrix = np.genfromtxt(util.prefix() + '995985.0' + "_cv_%d.csv" % (i),
-#                                            delimiter=",")
-                print acc_matrix
-                np.savetxt(util.prefix() + "%s_cv_%d.csv" % (pre_svm_alg, i),
-                           acc_matrix, delimiter=",", fmt='%.3f')
-                util.plot_accuracies(acc_matrix, b_val, "RBF width b",
-                                     lam_val, "%s_class%d_b"%(pre_svm_alg, i))
-#                 util.plot_accuracies(acc_matrix.T, lam_val, "Lambda (C)",
-#                                      b_val, "class%d_l"%(i))
+            run_single_multiclassifier = True
+            if run_single_multiclassifier:
+                helper.onevsone_multiclassify(
+                    X, Ya, X_test, Ya_test, num_classes,
+                    #lambda X, Y, lam=1: SVMSkLinear(X, Y, lam))
+                    lambda X, Y, lam=1: SVM(X, Y, lam))
+                    #lambda X, Y, lam=1, b=0.5: SVMSkSVC(X, Y, lam, b, kernel='rbf'))
+             
+            run_cross_validation = False
+            if run_cross_validation:
+                lam_val = [math.pow(1.5, p+1)*10 for p in range(7)]
+                b_val = [(p+1)/40 for p in range(27)]
+                #lam_val = [math.pow(1.2, p+1)*10 for p in range(27)]
+                #b_val = [(p+2)/20 for p in range(7)]
+                
+                lmbd_sk = lambda lam, b, X, Y: SVMSkSVC(X, Y, lam, b, kernel='rbf')
+                lmbd_my = lambda lam, b, X, Y: SVM(X, Y, lam, kernel=RBFKernel(b))
+    
+                pre_svm_alg = "sk" #"ny"
+                
+                cm, acc_list = helper.onevsall_multiclassify_validation(
+                    X, Ya, X_valid, Ya_valid, num_classes,
+                    lmbd_sk if pre_svm_alg=="sk" else lmbd_my,
+                    lam_val, b_val)
+    
+                
+                for i in range(3):#len(acc_list)):
+                    print "--- Class %d" %(i)
+                    acc_matrix = np.array(acc_list[i])
+                    #acc_matrix = np.genfromtxt(util.prefix() +
+                    #                           '995985.0' + "_cv_%d.csv" % (i),
+                    #                           delimiter=",")
+                    print acc_matrix
+                    np.savetxt(util.prefix() + "%s_cv_%d.csv" % (pre_svm_alg, i),
+                               acc_matrix, delimiter=",", fmt='%.3f')
+                    util.plot_accuracies(acc_matrix, b_val, "RBF width b",
+                                         lam_val, "%s_class%d_b"%(pre_svm_alg, i))
+                    #util.plot_accuracies(acc_matrix.T, lam_val, "Lambda (C)",
+                                        #b_val, "class%d_l"%(i))
 

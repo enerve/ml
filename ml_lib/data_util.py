@@ -27,13 +27,13 @@ def normalize(X, f_range=None, f_mean=None):
     X -= f_mean
     return X, f_range, f_mean
 
-def normalize_all(X, X_test, X_valid):
+def normalize_all(X, X_valid, X_test):
     X, f_range, f_mean = normalize(X)
     X_test = normalize(X_test, f_range, f_mean)[0]
     X_valid = normalize(X_valid, f_range, f_mean)[0]
-    return (X, X_test, X_valid)
+    return (X, X_valid, X_test)
 
-def split_into_train_test_sets(X, Y, test_portion, validation_portion):
+def split_into_train_test_sets(X, Y, validation_portion, test_portion):
     # Split into Training and Testing sets
     global pre_portion
     pre_portion = test_portion
@@ -53,4 +53,39 @@ def split_into_train_test_sets(X, Y, test_portion, validation_portion):
     Y_valid = Y[valid_idx]
     X = X[train_idx]
     Y = Y[train_idx]
-    return (X, Y, X_test, Y_test, X_valid, Y_valid)
+    return (X, Y, X_valid, Y_valid, X_test, Y_test)
+
+def bucketify(Y, Y_valid, Y_test, split_points):
+    print "Classes (%s) split at:" %(len(split_points))
+    print split_points[1:]
+
+    Ya = np.zeros(Y.shape, dtype=np.int16)
+    for i, spl in enumerate(split_points):
+        Ya[Y>spl] = i
+
+    Ya_valid = np.zeros(Y_valid.shape)
+    for i, spl in enumerate(split_points):
+        Ya_valid[Y_valid>spl] = i
+
+    Ya_test = np.zeros(Y_test.shape)
+    for i, spl in enumerate(split_points):
+        Ya_test[Y_test>spl] = i
+        
+    return (Ya, Ya_valid, Ya_test)
+
+def describe_classes(Y, Y_valid, Y_test):
+    print "Training set"
+    print "  Class 0: ", np.sum(Y == 0)
+    print "  Class 1: ", np.sum(Y == 1)
+    print "  Class 2: ", np.sum(Y == 2)
+
+    print "Validation set"
+    print "  Class 0: ", np.sum(Y_valid == 0)
+    print "  Class 1: ", np.sum(Y_valid == 1)
+    print "  Class 2: ", np.sum(Y_valid == 2)
+
+    print "Test set"
+    print "  Class 0: ", np.sum(Y_test == 0)
+    print "  Class 1: ", np.sum(Y_test == 1)
+    print "  Class 2: ", np.sum(Y_test == 2)
+
