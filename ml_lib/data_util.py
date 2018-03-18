@@ -8,6 +8,8 @@ Utility methods to help munge data and prepare for running ML algorithms
 
 import numpy as np
 
+import ml_lib.util
+
 def select_features(X, feature_ids):
     X_selected = np.zeros((X.shape[0], 1))
     for col in feature_ids:
@@ -35,8 +37,11 @@ def normalize_all(X, X_valid, X_test):
 
 def split_into_train_test_sets(X, Y, validation_portion, test_portion):
     # Split into Training and Testing sets
-    global pre_portion
-    pre_portion = test_portion
+    global pre_validation_portion
+    global pre_test_portion
+    pre_validation_portion = validation_portion
+    pre_test_portion = test_portion
+
     train_idx=[]
     test_idx=[]
     valid_idx=[]

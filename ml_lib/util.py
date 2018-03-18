@@ -19,7 +19,8 @@ import heapq as hq
 
 pre_outputdir = None
 pre_dataset = None
-pre_portion = None
+pre_test_portion = None
+pre_validation_portion = None
 pre_alg = None
 pre_norm = None
 pre_tym = None
@@ -32,7 +33,8 @@ def prefix_init():
 def prefix():
     return (pre_outputdir if pre_outputdir else '') + \
         ("%s_"%pre_dataset if pre_dataset else '') + \
-        ("%s_"%pre_portion if pre_portion else '') + \
+        ("v%s_"%pre_validation_portion if pre_validation_portion else '') + \
+        ("t%s_"%pre_test_portion if pre_test_portion else '') + \
         ("%s_"%pre_alg if pre_alg else '') + \
         ("%s_"%pre_tym if pre_tym else '') + \
         ("%s_"%pre_norm if pre_norm else '')

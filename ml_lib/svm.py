@@ -8,7 +8,7 @@ from __future__ import division
 import numpy as np
 from cvxopt import matrix, solvers
 
-# from sklearn import svm
+import ml_lib.util as util
 
 class LinearKernel:
     def __init__(self):
@@ -20,7 +20,7 @@ class LinearKernel:
 
 class RBFKernel:
     def __init__(self, width):
-        print "RBF kernel"
+        print "RBF kernel width %s" % (width)
         self.width = width
 
     def compute(self, X1, X2):
@@ -131,18 +131,14 @@ class SVM(object):
         return ret
 
     def classify(self, X_test, Y_test):
-        """ Classify the given test set using this SVM classifier.
+        """ Classify the given set using this SVM classifier.
             Returns confusion matrix of test result accuracy.
         """
         class_prediction = np.sign(self.predict(X_test))
         class_prediction = ((class_prediction + 1) / 2).astype(int)
          
-        c_matrix = np.asarray([[0, 0],[0,0]])
-        for i, y in enumerate(Y_test):
-            c_matrix[y, class_prediction[i]] += 1
-         
-        print "Accuracy: %f%%" % (100 * (c_matrix[0, 0] + c_matrix[1, 1]) 
-                                  / np.sum(c_matrix))
+        c_matrix = util.confusion_matrix(class_prediction, Y_test, 2)
+        util.report_accuracy(c_matrix, False)
 
         return c_matrix
      
