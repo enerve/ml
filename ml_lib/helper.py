@@ -78,20 +78,19 @@ def onevsone_multiclassify(X, Y, X_test, Y_test, num_classes,
     return c_matrix
 
 
-def onevsall_multiclassify(X, Ya, X_test, Ya_test, n, create_classifier):
-#     print "Running linear multiclassifier on %s splits -----" %(n)
-#     print split_points
-    
-    Yp = np.zeros((Ya_test.shape[0], n))
+def onevsall_multiclassify(X, Y, X_test, Y_test, n, create_classifier):
+    print "Running one vs all multiclassifier on %d classes -----" %(n)
+
+    Yp = np.zeros((Y_test.shape[0], n))
     for i in range(n):
-        Yb = np.zeros((Ya.shape[0]))
-        Yb[Ya==i] = 1
+        Yb = np.zeros((Y.shape[0]))
+        Yb[Y==i] = 1
+        Yb_test = np.zeros((Y_test.shape[0]))
+        Yb_test[Y_test==i] = 1
 
         classifier = create_classifier(X, Yb)
-        print classifier.classify(X, Yb)
+        #print classifier.classify(X, Yb)
         
-        Yb_test = np.zeros((Ya_test.shape[0]))
-        Yb_test[Ya_test==i] = 1
         print classifier.classify(X_test, Yb_test)
 
         Yp_i = classifier.predict(X_test)
@@ -101,7 +100,7 @@ def onevsall_multiclassify(X, Ya, X_test, Ya_test, n, create_classifier):
 #     print Yp
     Yguess = np.argmax(Yp, axis=1)
 
-    c_matrix = util.confusion_matrix(Ya_test, Yguess, n)    
+    c_matrix = util.confusion_matrix(Y_test, Yguess, n)    
 
     print 'Overall test acc: %f%%' % util.get_accuracy(c_matrix)
     print c_matrix
@@ -136,7 +135,8 @@ def validate_for_best(acc_fn, var_list, depth):
 def onevsall_multiclassify_validation(X, Y, X_val, Y_val, n,
                                       create_classifier_validated,
                                       var1_list, var2_list):
-    print "Running one vs all multiclassifier on %d classes -----" %(n)
+    print "Running one vs all multiclassifier " + \
+        "validation on %d classes -----" %(n)
     
     Yp = np.zeros((Y_val.shape[0], n))
     
@@ -174,7 +174,7 @@ def onevsall_multiclassify_validation(X, Y, X_val, Y_val, n,
     print
     Yguess = np.argmax(Yp, axis=1)
 
-    c_matrix = util.confusion_matrix(Y_val, Yguess, n)    
+    c_matrix = util.confusion_matrix(Y_val, Yguess, n)
 
     print 'Overall test acc: %f%%' % util.get_accuracy(c_matrix)
     print c_matrix

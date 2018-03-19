@@ -9,6 +9,8 @@ import numpy as np
 from cvxopt import matrix, solvers
 
 import ml_lib.util as util
+import matplotlib.pyplot as plt
+import math
 
 class LinearKernel:
     def __init__(self):
@@ -81,21 +83,54 @@ class SVM(object):
         solvers.options['show_progress'] = False
         sol = solvers.qp(P, q, G, h, A, b)
 
-        al = np.reshape(np.array(sol['x']), (n))
-        al = np.around(al, 5)
-        self.alpha = al
+        self.alpha = np.reshape(np.array(sol['x']), (n))
         
         # precompute w0
-        if self.lam: #soft SVM
-            mu = self.lam - al
-            nza = np.nonzero(al * mu) # i.e. alpha > 0 and mu > 0
-        else:
-            nza = np.nonzero(al) # i.e. alpha > 0
-        i = nza[0][0] # index of first such row
-        self.w0 = (1 - Y[i] * np.inner(al * Y, K[i])) / Y[i]
         
-        #for j in range(nza[0].shape[0]):
-        #    i = nza[0][j] # index of j-1th nonzero alpha var
+        if self.lam: #soft SVM
+            nz_al = (self.alpha / self.lam > 0.01)
+            nz_mu = ((self.lam - self.alpha) / self.lam > 0.01)
+            nz = np.nonzero(nz_al & nz_mu)
+        else:
+            nz = np.nonzero(self.alpha) # i.e. alpha > 0
+        i = nz[0][0] # index of first such row
+        self.w0 = (1 - Y[i] * np.inner(self.alpha * Y, K[i])) / Y[i]
+        print "w0: %f" %(self.w0)
+
+        # verify they're all same
+        numnonzero = nz[0].shape[0]
+        numdiff = 0
+        others = []#[self.w0]
+        #for i in range(al.shape[0]):
+        for iw in range(numnonzero):
+            i = nz[0][iw]
+            w0_other = (1 - Y[i] * np.inner(self.alpha * Y, K[i])) / Y[i]
+            others.append(w0_other)
+            w0_diff = abs((w0_other - self.w0) / self.w0)
+            if w0_diff > 0.001:
+                numdiff += 1
+                #print "   different %d th w0: %f" % (i, w0_other)
+                #print "      al=%f  mu=%f" % (al[i], mu[i])
+        if numdiff > 0:
+            print "Num nonzero = %d/%d. Num different = %d/%d" % (numnonzero, 
+                                                                  n, numdiff, n)
+            print "  alpha nonzero = %d/%d" % (np.nonzero(al)[0].shape[0], n)
+            print "     mu nonzero = %d/%d" % (np.nonzero(mu)[0].shape[0], n)
+#             print "   round digits = %d" % (round_digits)
+        
+#         plt.hist((al * mu)[nz], bins=400)
+#         plt.show()
+#         plt.hist(al[nz], bins=400)
+#         plt.show()
+#         plt.hist(mu[nz], bins=400)
+#         plt.show()
+#         plt.hist(others, bins=100)
+#         plt.show()
+#         plt.hist(al, bins=100)
+#         plt.show()
+
+        #for j in range(nz[0].shape[0]):
+        #    i = nz[0][j] # index of j-1th nonzero alpha var
         #    w0 = (1 - Y[i] * np.inner(al * Y, K[i])) / Y[i]
         #    print "  potential w0: %f     for alpha[%d] %f  \twhere y=%d  \tdot=%f" %(
         #        w0, i, al[i], Y[i], (np.inner(al * Y, K[i])))
@@ -110,7 +145,6 @@ class SVM(object):
 
 #         dec = self.lin_clf.decision_function(X_test)
 
-        print "w0: %f" %(self.w0)
 
         X0 = X_test
         
