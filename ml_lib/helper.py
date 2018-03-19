@@ -142,13 +142,15 @@ def onevsall_multiclassify_validation(X, Y, X_val, Y_val, n,
     
     acc_list = []
     for i in range(n):
+#         if i!=2: continue
+        
         Yb = np.zeros((Y.shape[0]))
         Yb[Y==i] = 1
         Yb_val = np.zeros((Y_val.shape[0]))
         Yb_val[Y_val==i] = 1
         
         def classifier_and_accuracy(var1, var2):
-            classifier = create_classifier_validated(var1, var2, X, Yb)
+            classifier = create_classifier_validated(X, Yb, var1, var2)
             cm_v = classifier.classify(X_val, Yb_val)
             acc = util.get_accuracy(cm_v)
             return (classifier, acc, acc)

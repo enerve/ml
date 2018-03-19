@@ -180,27 +180,34 @@ if __name__ == '__main__':
                     pre_svm_alg = "sk" if reps % 2 == 0 else "my"
                     
                     # TODO:remove
-                    if pre_svm_cv_x == "l": continue
+#                     if pre_svm_cv_x == "l": continue
                     if pre_svm_alg == "sk": continue
                     
                     if pre_svm_cv_x == "b":
                         lam_val = [math.pow(1.5, p+1)*10 for p in range(7)]
                         b_val = [(p+1)/40 for p in range(27)]
-                        #lam_val = [math.pow(1.5, 5)*10 for p in range(1)]
-                        #b_val = [0.225]
+#                         lam_val = [math.pow(1.5, p+5)*10 for p in range(2)]
+#                         b_val = [(p+1)/40 for p in range(1)]
                     elif pre_svm_cv_x == "l":
                         lam_val = [math.pow(1.2, p+1)*10 for p in range(27)]
                         b_val = [(p+2)/20 for p in range(7)]
+#                         lam_val = [math.pow(1.2, p+23)*10 for p in range(1)]
+#                         b_val = [(p+2)/20 for p in range(1)]
                     print lam_val
                     print b_val
                     
-                    lmbd_sk = lambda lam, b, X, Y: SVMSkSVC(X, Y, lam, b, kernel='rbf')
-                    lmbd_my = lambda lam, b, X, Y: SVM(X, Y, lam, kernel=RBFKernel(b))
+                    lmbd_sk = lambda X, Y, b, lam: SVMSkSVC(X, Y, lam, b, kernel='rbf')
+#                     lmbd_my = lambda lam, b, X, Y: SVM(X, Y, lam, kernel=RBFKernel(b))
+#                     lmbd_my = lambda X, Y, b, lam: SVM(X).reset(Y, lam, kernel=RBFKernel(b))
+                    # Use a single instance so K matrix can be shared better
+                    single_svm = SVM(X)
+                    lmbd_my = lambda X, Y, b, lam, svm=single_svm: \
+                        svm.initialize(Y, lam, RBFKernel(b))
                             
                     cm, acc_list = helper.onevsall_multiclassify_validation(
                         X, Ya, X_valid, Ya_valid, num_classes,
                         lmbd_sk if pre_svm_alg=="sk" else lmbd_my,
-                        lam_val, b_val)
+                        b_val, lam_val)
         
                     for i in range(num_classes):
                         print "--- Class %d" %(i)
@@ -215,10 +222,10 @@ if __name__ == '__main__':
                         np.savetxt(util.prefix() + suff + ".csv",
                                    acc_matrix, delimiter=",", fmt='%.3f')
                         if pre_svm_cv_x == 'b':
-                            util.plot_accuracies(acc_matrix, b_val,
+                            util.plot_accuracies(acc_matrix.T, b_val,
                                                  "RBF width b", lam_val, suff)
                         elif pre_svm_cv_x == 'l':
-                            util.plot_accuracies(acc_matrix.T, lam_val, 
+                            util.plot_accuracies(acc_matrix, lam_val, 
                                                  "Lambda (C)", b_val, suff)
     
 

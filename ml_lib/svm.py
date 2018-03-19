@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import math
 
 class LinearKernel:
-    def __init__(self):
+    def output(self):
         print "Linear kernel"
 
     def compute(self, X1, X2):
@@ -22,8 +22,10 @@ class LinearKernel:
 
 class RBFKernel:
     def __init__(self, width):
-        print "RBF kernel width %s" % (width)
         self.width = width
+
+    def output(self):
+        print "RBF kernel width %s" % (self.width)
 
     def compute(self, X1, X2):
         ''' Creates a RBF kernel matrix between rows of X1 and X2. '''
@@ -32,30 +34,49 @@ class RBFKernel:
         
         D = np.sum(np.square(X1 - X2), axis=2)
         return np.exp(-1 * D / self.width)
+    
+    def __eq__(self, other):
+        return isinstance(other, RBFKernel) and self.width == other.width
+
+    def __ne__(self, other):
+        return not isinstance(other, RBFKernel) or self.width != other.width
 
 class SVM(object):
     '''
     The Support Vector Machine classifier
     '''
 
-    def __init__(self, X, Y, lam=None, kernel=None):
+    def __init__(self, X, Y=None, lam=None, kernel=None):
         """ Initializes the SVM.
         X and Y form the training data over which to train the model
         lam is the lambda slack weight parameter, small for loose
             classification, or infinity for strict separating hyperplane
         """
         self.X = X
+        self.kernel = None
+
+        self.initialize(Y, lam, kernel)
+        
+    def initialize(self, Y, lam, kernel):
         self.Y = Y
         self.lam = lam
-        print "SVM with lambda = %f" %(lam)
         
         self.alpha = None
         self.w0 = None
+        self.first_w0 = None
         
-        self.kernel = kernel or LinearKernel()
+        kernel = kernel or LinearKernel()
+        if True:#kernel != self.kernel:
+            self.K = None
+            self.kernel = kernel
+        
+        return self
 
     def learn(self):
         """ Learns the alpha variables of the dual and precomputes w0 """
+
+        print "SVM with lambda = %f" %(self.lam)
+        self.kernel.output()
 
         X = self.X
         n = X.shape[0]
@@ -65,7 +86,9 @@ class SVM(object):
 #         self.lin_clf = svm.LinearSVC(loss='hinge')
 #         self.lin_clf.fit(X, Y)
         
-        K = self.kernel.compute(X, X)
+        if self.K is None:
+            self.K = self.kernel.compute(X, X)
+        K = self.K
         
         # Solve quadratic system of the svm dual, i.e. find the alpha vars
         P = matrix(Y_ * K * Y_.T)
@@ -95,13 +118,13 @@ class SVM(object):
             nz = np.nonzero(self.alpha) # i.e. alpha > 0
         i = nz[0][0] # index of first such row
         self.w0 = (1 - Y[i] * np.inner(self.alpha * Y, K[i])) / Y[i]
-        print "w0: %f" %(self.w0)
 
-        # verify they're all same
+        # verify they're all approx same, and find their average
         numnonzero = nz[0].shape[0]
         numdiff = 0
         others = []#[self.w0]
         #for i in range(al.shape[0]):
+        w0_sum = 0
         for iw in range(numnonzero):
             i = nz[0][iw]
             w0_other = (1 - Y[i] * np.inner(self.alpha * Y, K[i])) / Y[i]
@@ -111,30 +134,20 @@ class SVM(object):
                 numdiff += 1
                 #print "   different %d th w0: %f" % (i, w0_other)
                 #print "      al=%f  mu=%f" % (al[i], mu[i])
+            else:
+                w0_sum += w0_other
+        new_w0 = w0_sum / (numnonzero - numdiff)
+        
+        print "w0: %f     \tminus avg w0 = %f" %(self.w0, self.w0-new_w0)
+        self.first_w0 = self.w0
+        self.w0 = new_w0
+        
         if numdiff > 0:
             print "Num nonzero = %d/%d. Num different = %d/%d" % (numnonzero, 
                                                                   n, numdiff, n)
-            print "  alpha nonzero = %d/%d" % (np.nonzero(al)[0].shape[0], n)
-            print "     mu nonzero = %d/%d" % (np.nonzero(mu)[0].shape[0], n)
-#             print "   round digits = %d" % (round_digits)
+            print "  alpha nonzero = %d/%d" % (np.sum(nz_al), n)
+            print "     mu nonzero = %d/%d" % (np.sum(nz_mu), n)
         
-#         plt.hist((al * mu)[nz], bins=400)
-#         plt.show()
-#         plt.hist(al[nz], bins=400)
-#         plt.show()
-#         plt.hist(mu[nz], bins=400)
-#         plt.show()
-#         plt.hist(others, bins=100)
-#         plt.show()
-#         plt.hist(al, bins=100)
-#         plt.show()
-
-        #for j in range(nz[0].shape[0]):
-        #    i = nz[0][j] # index of j-1th nonzero alpha var
-        #    w0 = (1 - Y[i] * np.inner(al * Y, K[i])) / Y[i]
-        #    print "  potential w0: %f     for alpha[%d] %f  \twhere y=%d  \tdot=%f" %(
-        #        w0, i, al[i], Y[i], (np.inner(al * Y, K[i])))
-        #    if j>100: break
 
     def predict(self, X_test):
         """ Predict class for the given data using this SVM classifier.
@@ -142,9 +155,6 @@ class SVM(object):
             proportional to the likelihood of it being so.
         """
         if self.alpha is None: self.learn()
-
-#         dec = self.lin_clf.decision_function(X_test)
-
 
         X0 = X_test
         
@@ -154,25 +164,26 @@ class SVM(object):
         Kmn = self.kernel.compute(X0, X)
         ret = np.dot(Kmn, self.alpha * Y) + self.w0
         
-#         df =  (ret - dec)
-#         d2 = np.zeros(df.shape[0])
-#         d2[ret*dec > 0] = 1
-#         print "Diff between Y predictions:"
-#         print "  Average : %f off from %f" % (np.average(df), np.average(dec))
-#         print "  Ratio   : %f " % (np.average(df / dec))
-#         print "  #match: %s / %s" % (np.sum(d2), X_test.shape[0])
-        
         return ret
 
     def classify(self, X_test, Y_test):
         """ Classify the given set using this SVM classifier.
             Returns confusion matrix of test result accuracy.
         """
-        class_prediction = np.sign(self.predict(X_test))
+        pred = self.predict(X_test)
+        class_prediction = np.sign(pred)
         class_prediction = ((class_prediction + 1) / 2).astype(int)
          
         c_matrix = util.confusion_matrix(class_prediction, Y_test, 2)
+        acc = util.get_accuracy(c_matrix)
         util.report_accuracy(c_matrix, False)
 
+        class_prediction = np.sign(pred + self.first_w0 - self.w0)
+        class_prediction = ((class_prediction + 1) / 2).astype(int)
+        c_matrix = util.confusion_matrix(class_prediction, Y_test, 2)
+        old_acc = util.get_accuracy(c_matrix)
+        if acc < old_acc:
+            print "\tOld accuracy was better! %f (old) vs %f (avg)" %(old_acc, acc)
+        
         return c_matrix
      
