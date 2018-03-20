@@ -1,11 +1,12 @@
 '''
 Created on Mar 9, 2018
 
-@author: erw
+@author: enerve
 '''
 from __future__ import division
-
+import logging
 import numpy as np
+
 from sklearn import svm
 
 import ml_lib.util as util
@@ -21,18 +22,22 @@ class SVMSkSVC(object):
         lam is the lambda slack weight parameter, small for loose
             classification, or infinity for strict separating hyperplane
         """
+        self.logger = logging.getLogger(__name__)
+        #self.logger.setLevel(logging.INFO)
+
         self.X = X
         self.Y = Y
         self.lam = lam
         self.b = b
         self.kernel = kernel
-        print "Sklearn SVM with lambda = %f, b = %f and kernel %s" %(
-            lam, b, kernel)
         
         self.clf = None
 
     def learn(self):
         """ Learns the alpha variables of the dual and precomputes w0 """
+
+        self.logger.info("Sklearn SVM with lambda = %f, b = %f and kernel %s",
+            self.lam, self.b, self.kernel)
 
         X = self.X
         n = X.shape[0]
@@ -61,11 +66,7 @@ class SVMSkSVC(object):
         class_prediction = ((class_prediction + 1) / 2).astype(int)
          
         c_matrix = util.confusion_matrix(class_prediction, Y_test, 2)
-         
-        print "Accuracy (%f, %f): %f%%" % (self.lam, self.b,
-                                           100 * (
-                                               c_matrix[0, 0] + c_matrix[1, 1]) 
-                                           / np.sum(c_matrix))
+        util.report_accuracy(c_matrix, False)
 
         return c_matrix
      

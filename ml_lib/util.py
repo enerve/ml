@@ -4,16 +4,22 @@ Created on Jan 25, 2018
 Utility methods to deal with results, display on screen, in figures or 
 output to files
 
-@author: erw
+@author: enerve
 '''
 from __future__ import division
-
-import numpy as np
-import matplotlib.pyplot as plt
-import time
 import heapq as hq
+import logging
+import numpy as np
+import time
+
+import matplotlib.pyplot as plt
 
 
+logger = logging.getLogger(__name__)
+
+def init_logger():
+    #logger.setLevel(logging.INFO)
+    pass
 
 # ------ Drawing ---------
 
@@ -25,10 +31,10 @@ pre_alg = None
 pre_norm = None
 pre_tym = None
 
-def prefix_init():
-    global pre_tym
+def prefix_init(args):
+    global pre_tym, pre_outputdir
     pre_tym = str(int(round(time.time()) % 1000000))
-    print "initializing tym to %s" %(pre_tym)
+    pre_outputdir = args.output_dir
 
 def prefix():
     return (pre_outputdir if pre_outputdir else '') + \
@@ -61,7 +67,7 @@ def draw_classes_pdf(X, Y, classifier, threshold, col):
 
     t = A[0,0] / (A[0, 0] + A[0, 1])    # true negatives
     f = A[1,0] / (A[1, 0] + A[1, 1])    # false negatives
-    print('True negatives: %s \t False negatives: %s \t' % (t, f))
+    logger.debug('True negatives: %s \t False negatives: %s \t', t, f)
     
 # draw ROC curve
 # true negative vs false negative
@@ -106,7 +112,7 @@ def draw_ROC_curve(X_test, Y_test, classifier):
         fn.append(f)
     
     elapsed_time = time.time() - start_time
-    print 'Avg time: %s' %(elapsed_time / measurements) #0.0409 ... 0.0038
+    logger.debug('Avg time: %s', elapsed_time / measurements)
     
     plt.plot(fn, tn, 'r-')
     plt.xlabel('false negatives')
@@ -154,7 +160,7 @@ def plot_accuracy(acc, x_values, line_labels=None, pref=None):
         + ("%s_"%pref if pref else '') \
         + 'val.png'
     plt.savefig(fname, bbox_inches='tight')
-    print fname
+    logger.debug(fname)
     plt.show()
 
 def plot_accuracies(acc_matrix, x_values, x_label, z_labels=None, pref=None):
@@ -168,17 +174,17 @@ def plot_accuracies(acc_matrix, x_values, x_label, z_labels=None, pref=None):
         + 'val.png'
     plt.legend(loc=4)
     plt.savefig(fname, bbox_inches='tight')
-    print fname
+    logger.debug(fname)
 #     plt.show()
     plt.clf() # clear figure
 
 # ------ Logging/Debugging ---------
 
 def report_accuracy(c_matrix, display_matrix=True):
-    print "Accuracy: %s%%" % get_accuracy(c_matrix)
+    logger.info("Accuracy: %s%%", get_accuracy(c_matrix))
     if display_matrix:
         for c in c_matrix:
-            print "\t", c
+            logger.info("\t%s", c)
     
 def get_accuracy(c_matrix):
     correct = sum([c_matrix[i, i] for i in range(len(c_matrix[0]))])

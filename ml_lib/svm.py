@@ -1,7 +1,7 @@
 '''
 Created on Mar 3, 2018
 
-@author: erw
+@author: enerve
 '''
 from __future__ import division
 
@@ -9,12 +9,11 @@ import numpy as np
 from cvxopt import matrix, solvers
 
 import ml_lib.util as util
-import matplotlib.pyplot as plt
-import math
+import logging
 
 class LinearKernel:
-    def output(self):
-        print "Linear kernel"
+    def __str__(self):
+        return "Linear kernel"
 
     def compute(self, X1, X2):
         ''' Creates a linear kernel matrix between rows of X1 and X2. '''
@@ -24,8 +23,8 @@ class RBFKernel:
     def __init__(self, width):
         self.width = width
 
-    def output(self):
-        print "RBF kernel width %s" % (self.width)
+    def __str__(self):
+        return "RBF kernel width %s" % self.width
 
     def compute(self, X1, X2):
         ''' Creates a RBF kernel matrix between rows of X1 and X2. '''
@@ -52,6 +51,9 @@ class SVM(object):
         lam is the lambda slack weight parameter, small for loose
             classification, or infinity for strict separating hyperplane
         """
+        self.logger = logging.getLogger(__name__)
+        #self.logger.setLevel(logging.INFO)
+
         self.X = X
         self.kernel = None
 
@@ -75,8 +77,8 @@ class SVM(object):
     def learn(self):
         """ Learns the alpha variables of the dual and precomputes w0 """
 
-        print "SVM with lambda = %f" %(self.lam)
-        self.kernel.output()
+        self.logger.debug("SVM with lambda = %f", self.lam)
+        logging.debug("%s", self.kernel)
 
         X = self.X
         n = X.shape[0]
@@ -102,7 +104,7 @@ class SVM(object):
         A = matrix(Y.reshape((1, n)).astype(float))
         b = matrix([0.0])
         
-        print "...Learning..."
+        self.logger.info("...Learning...")
         solvers.options['show_progress'] = False
         sol = solvers.qp(P, q, G, h, A, b)
 
@@ -132,21 +134,22 @@ class SVM(object):
             w0_diff = abs((w0_other - self.w0) / self.w0)
             if w0_diff > 0.001:
                 numdiff += 1
-                #print "   different %d th w0: %f" % (i, w0_other)
-                #print "      al=%f  mu=%f" % (al[i], mu[i])
+                #logging.debug("   different %d th w0: %f", i, w0_other)
+                #logging.debug("      al=%f  mu=%f", al[i], mu[i])
             else:
                 w0_sum += w0_other
         new_w0 = w0_sum / (numnonzero - numdiff)
         
-        print "w0: %f     \tminus avg w0 = %f" %(self.w0, self.w0-new_w0)
+        logging.debug("w0: %f     \tminus avg w0 = %f",
+                      self.w0, self.w0-new_w0)
         self.first_w0 = self.w0
         self.w0 = new_w0
         
         if numdiff > 0:
-            print "Num nonzero = %d/%d. Num different = %d/%d" % (numnonzero, 
-                                                                  n, numdiff, n)
-            print "  alpha nonzero = %d/%d" % (np.sum(nz_al), n)
-            print "     mu nonzero = %d/%d" % (np.sum(nz_mu), n)
+            logging.debug("Num nonzero = %d/%d. Num different = %d/%d", 
+                          numnonzero, n, numdiff, n)
+            logging.debug("  alpha nonzero = %d/%d", np.sum(nz_al), n)
+            logging.debug("     mu nonzero = %d/%d", np.sum(nz_mu), n)
         
 
     def predict(self, X_test):
@@ -183,7 +186,8 @@ class SVM(object):
         c_matrix = util.confusion_matrix(class_prediction, Y_test, 2)
         old_acc = util.get_accuracy(c_matrix)
         if acc < old_acc:
-            print "\tOld accuracy was better! %f (old) vs %f (avg)" %(old_acc, acc)
+            logging.debug("\tOld accuracy was better! %f (old) vs %f (avg)",
+                          old_acc, acc)
         
         return c_matrix
      

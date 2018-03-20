@@ -27,7 +27,3 @@ def parse_args():
     parser.add_argument('--knn', action='store_true')
     parser.add_argument('--svm', action='store_true')
     return parser.parse_args()
-
-
-if __name__ == '__main__':
-    pass

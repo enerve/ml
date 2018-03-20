@@ -1,13 +1,15 @@
 '''
 Created on Feb 20, 2018
 
-@author: erw
+@author: enerve
 '''
 from __future__ import division
-
+import logging
 import numpy as np
+
 import matplotlib.pyplot as plt
-import util
+
+import ml_lib.util as util
 
 def sigmoid(A):
     e = np.exp(-A)
@@ -26,6 +28,9 @@ class Logistic(object):
         max_steps is the maximum number of iterations to use
         reg_constant is the regularization multiplier to be used.
         """
+        self.logger = logging.getLogger(__name__)
+        #self.logger.setLevel(logging.INFO)
+
         self.X = X
         self.Y = Y
         self.step_size = step_size
@@ -47,7 +52,6 @@ class Logistic(object):
         
 #         lw = [[] for k in range(len(w))]
         for iter in range(self.max_steps):
-#             print w
             P = sigmoid(Yt * np.dot(Xt, w))
             grad = np.sum(Yt * (1-P) * Xt.T, axis=1) - self.reg_constant * w
             eta = self.step_size# * 10000 / (10000 + iter)
@@ -61,9 +65,10 @@ class Logistic(object):
 #                     lw[k].append(w[k])
             
                 if iter % 10000 == 0:
-                    print "Iter %s:\t" %(iter), w[0], w[1], w[2]
-        
-        print "Iterations: %s" %(iter)
+                    self.logger.debug("Iter %s:\t%s %s %s", iter, w[0],
+                                      w[1], w[2])
+
+        self.logger.debug("Iterations: %s", iter)
 
     
 
@@ -154,12 +159,8 @@ class Logistic(object):
         class_prediction = np.sign(self.predict(X_test))
         class_prediction = ((class_prediction + 1) / 2).astype(int)
         
-        c_matrix = np.asarray([[0, 0],[0,0]])
-        for i, y in enumerate(Y_test):
-            c_matrix[y, class_prediction[i]] += 1
-        
-        print "Accuracy: %f%%" % (100 * (c_matrix[0, 0] + c_matrix[1, 1]) 
-                                  / np.sum(c_matrix))
+        c_matrix = util.confusion_matrix(class_prediction, Y_test, 2)
+        util.report_accuracy(c_matrix, False)
         
         return c_matrix
     

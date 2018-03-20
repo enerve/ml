@@ -3,12 +3,20 @@ Created on Mar 15, 2018
 
 Utility methods to help munge data and prepare for running ML algorithms
 
-@author: erw
+@author: enerve
 '''
 
+import logging
 import numpy as np
 
-import ml_lib.util
+import ml_lib.log as log
+import ml_lib.util as util
+
+logger = logging.getLogger(__name__)
+
+def init_logger():
+    logger.setLevel(logging.INFO)
+    pass
 
 def select_features(X, feature_ids):
     X_selected = np.zeros((X.shape[0], 1))
@@ -23,7 +31,6 @@ def normalize(X, f_range=None, f_mean=None):
     if f_range is None:
         f_range = np.max(X, axis=0) - np.min(X, axis=0)
     X = X / f_range
-#     print (f_range * 100).astype(int)
     if f_mean is None:
         f_mean = np.mean(X)
     X -= f_mean
@@ -37,10 +44,8 @@ def normalize_all(X, X_valid, X_test):
 
 def split_into_train_test_sets(X, Y, validation_portion, test_portion):
     # Split into Training and Testing sets
-    global pre_validation_portion
-    global pre_test_portion
-    pre_validation_portion = validation_portion
-    pre_test_portion = test_portion
+    util.pre_validation_portion = validation_portion
+    util.pre_test_portion = test_portion
 
     train_idx=[]
     test_idx=[]
@@ -61,8 +66,8 @@ def split_into_train_test_sets(X, Y, validation_portion, test_portion):
     return (X, Y, X_valid, Y_valid, X_test, Y_test)
 
 def bucketify(Y, Y_valid, Y_test, split_points):
-    print "Classes (%s) split at:" %(len(split_points))
-    print split_points[1:]
+    logger.debug("Classes (%s) split at:", len(split_points))
+    logger.debug("%s", split_points[1:])
 
     Ya = np.zeros(Y.shape, dtype=np.int16)
     for i, spl in enumerate(split_points):
@@ -79,18 +84,18 @@ def bucketify(Y, Y_valid, Y_test, split_points):
     return (Ya, Ya_valid, Ya_test)
 
 def describe_classes(Y, Y_valid, Y_test):
-    print "Training set"
-    print "  Class 0: ", np.sum(Y == 0)
-    print "  Class 1: ", np.sum(Y == 1)
-    print "  Class 2: ", np.sum(Y == 2)
+    logger.debug("Training set")
+    logger.debug("  Class 0: %d", np.sum(Y == 0))
+    logger.debug("  Class 1: %d", np.sum(Y == 1))
+    logger.debug("  Class 2: %d", np.sum(Y == 2))
 
-    print "Validation set"
-    print "  Class 0: ", np.sum(Y_valid == 0)
-    print "  Class 1: ", np.sum(Y_valid == 1)
-    print "  Class 2: ", np.sum(Y_valid == 2)
+    logger.debug("Validation set")
+    logger.debug("  Class 0: %d", np.sum(Y_valid == 0))
+    logger.debug("  Class 1: %d", np.sum(Y_valid == 1))
+    logger.debug("  Class 2: %d", np.sum(Y_valid == 2))
 
-    print "Test set"
-    print "  Class 0: ", np.sum(Y_test == 0)
-    print "  Class 1: ", np.sum(Y_test == 1)
-    print "  Class 2: ", np.sum(Y_test == 2)
+    logger.debug("Test set")
+    logger.debug("  Class 0: %d", np.sum(Y_test == 0))
+    logger.debug("  Class 1: %d", np.sum(Y_test == 1))
+    logger.debug("  Class 2: %d", np.sum(Y_test == 2))
 

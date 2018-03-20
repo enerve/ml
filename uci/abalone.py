@@ -1,22 +1,19 @@
 '''
-@author erw
+@author enerve
 
 '''
 from __future__ import division
-
-import argparse
+import logging
+import math
 import numpy as np
 
 from ml_lib.gaussian_plugin_classifier import GaussianPlugInClassifier 
 from ml_lib.gaussian_naive_classifier import GaussianNaiveClassifier
-
 import ml_lib.util as util
 import ml_lib.data_util as data_util
 import ml_lib.helper as helper
 import ml_lib.cmd_line as cmd_line
-
-import math
-
+import ml_lib.log as log
 
 # Draw histograms for each column
 def draw_classes_histogram(X, Y, num_classes):
@@ -24,13 +21,17 @@ def draw_classes_histogram(X, Y, num_classes):
         util.draw_class_histograms(X, Y, num_classes, col)
 
 
-if __name__ == '__main__':
+def main():
     args = cmd_line.parse_args()
 
-    util.prefix_init()
-
-    print "--- Abalone dataset ---"
+    util.prefix_init(args)
     util.pre_dataset = "abalone"
+
+    logger = logging.getLogger()
+    log.configure_logger(logger, util.pre_dataset)
+    logger.setLevel(logging.DEBUG)
+    
+    logger.info("--- Abalone dataset ---")
 
     data = np.genfromtxt(args.file, delimiter=",",
                          converters={0: lambda x: 0.0 if x=='M' 
@@ -51,24 +52,22 @@ if __name__ == '__main__':
 
     Y = data[:, 8].astype(int)
 
-    util.pre_outputdir = args.output_dir
-
-    print "Full dataset: ", X.shape
-    print "  Males:   ", np.sum(X[:,0])
-    print "  Females: ", np.sum(X[:,1])
-    print "  Infants: ", np.sum(X[:,2])
+    logger.debug("Full dataset: %s", X.shape)
+    logger.debug("  Males:   %s", np.sum(X[:,0]))
+    logger.debug("  Females: %s", np.sum(X[:,1]))
+    logger.debug("  Infants: %s", np.sum(X[:,2]))
     
     X, Y, X_valid, Y_valid, X_test, Y_test = \
         data_util.split_into_train_test_sets(
             X, Y, args.validation_portion, args.test_portion)
     
-    print "Training dataset:   %s" % (X.shape, )
-    print "Validation dataset(%d): %s" % (args.validation_portion,
-                                          X_valid.shape)
-    print "Testing dataset(%d): %s" % (args.test_portion, X_test.shape)
+    logger.debug("Training dataset:   %s", (X.shape, ))
+    logger.debug("Validation dataset(%d): %s", args.validation_portion,
+                 X_valid.shape)
+    logger.debug("Testing dataset(%d): %s", args.test_portion, X_test.shape)
 
     if args.normalize:
-        print "Normalizing..."
+        logger.info("Normalizing...")
         util.pre_norm = "n"
         X, X_valid, X_test = data_util.normalize_all(X, X_valid, X_test)
 
@@ -84,7 +83,7 @@ if __name__ == '__main__':
             draw_classes_histogram(X, Ya, num_classes)
 
         if args.bayes:
-            print "Bayes classifier..."
+            logger.info("Bayes classifier...")
             util.pre_alg = "bayes"
             # Gaussian plug-in classifier
             
@@ -94,7 +93,7 @@ if __name__ == '__main__':
             util.report_accuracy(gpi_classifier.classify(X_test, Ya_test)[0])
     
         if args.naive:
-            print "Naive bayes classifier..."
+            logger.info("Naive bayes classifier...")
             util.pre_alg = "naive"
             # Gaussian naive bayes classifier
             
@@ -104,7 +103,7 @@ if __name__ == '__main__':
             util.report_accuracy(naive_classifier.classify(X_test, Ya_test)[0])
 
         if args.perceptron:
-            print "Perceptron..."
+            logger.info("Perceptron...")
             util.pre_alg = "perceptron"
             from ml_lib.perceptron import Perceptron
             
@@ -113,7 +112,7 @@ if __name__ == '__main__':
                 lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 8000, 0))
             
         if args.logistic:
-            print "Logistic Regression..."
+            logger.info("Logistic Regression...")
             util.pre_alg = "logistic"
             from ml_lib.logistic import Logistic
             
@@ -123,7 +122,7 @@ if __name__ == '__main__':
                                       reg_constant=0.01))
 
         if args.knn:
-            print "k-Nearest Neighbor..."
+            logger.info("k-Nearest Neighbor...")
             util.pre_alg = "knn"
             from ml_lib.knn import KNN
             
@@ -133,12 +132,12 @@ if __name__ == '__main__':
                 util.report_accuracy(knn_classifier.classify(X_test, Ya_test))
     
             for k in range(10, 30):
-                print "%s-NN" % (k+1)
+                logger.info("%s-NN", k+1)
                 knn_classifier = KNN(X, Ya, 1+k, 3)
                 util.report_accuracy(knn_classifier.classify(X_valid, Ya_valid))
 
         if args.svm:
-            print "Support Vector Machine..."
+            logger.info("Support Vector Machine...")
             util.pre_alg = "svm"
             from ml_lib.svm import SVM, RBFKernel
             from ml_lib.svm_sk_svc import SVMSkSVC
@@ -193,8 +192,8 @@ if __name__ == '__main__':
                         b_val = [(p+2)/20 for p in range(7)]
 #                         lam_val = [math.pow(1.2, p+23)*10 for p in range(1)]
 #                         b_val = [(p+2)/20 for p in range(1)]
-                    print lam_val
-                    print b_val
+                    logger.debug(lam_val)
+                    logger.debug(b_val)
                     
                     lmbd_sk = lambda X, Y, b, lam: SVMSkSVC(X, Y, lam, b, kernel='rbf')
 #                     lmbd_my = lambda lam, b, X, Y: SVM(X, Y, lam, kernel=RBFKernel(b))
@@ -210,12 +209,12 @@ if __name__ == '__main__':
                         b_val, lam_val)
         
                     for i in range(num_classes):
-                        print "--- Class %d" %(i)
+                        logger.info("--- Class %d", i)
                         acc_matrix = np.array(acc_list[i])
                         #acc_matrix = np.genfromtxt(util.prefix() +
                         #                           '995985.0' + "_cv_%d.csv" % (i),
                         #                           delimiter=",")
-                        print acc_matrix
+                        logger.info("%s", acc_matrix)
                         
                         suff = "val_%s_class%d_%s"%(pre_svm_alg, i,
                                                     pre_svm_cv_x)
@@ -229,3 +228,5 @@ if __name__ == '__main__':
                                                  "Lambda (C)", b_val, suff)
     
 
+if __name__ == '__main__':
+    main()
