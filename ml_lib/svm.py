@@ -4,9 +4,11 @@ Created on Mar 3, 2018
 @author: enerve
 '''
 from __future__ import division
-
-import numpy as np
 from cvxopt import matrix, solvers
+from scipy import stats
+import numpy as np
+import matplotlib.pyplot as plt
+import sys
 
 import ml_lib.util as util
 import logging
@@ -68,7 +70,7 @@ class SVM(object):
         self.first_w0 = None
         
         kernel = kernel or LinearKernel()
-        if True:#kernel != self.kernel:
+        if kernel != self.kernel:
             self.K = None
             self.kernel = kernel
         
@@ -115,39 +117,22 @@ class SVM(object):
         if self.lam: #soft SVM
             nz_al = (self.alpha / self.lam > 0.01)
             nz_mu = ((self.lam - self.alpha) / self.lam > 0.01)
-            nz = np.nonzero(nz_al & nz_mu)
+            nz = nz_al & nz_mu
         else:
-            nz = np.nonzero(self.alpha) # i.e. alpha > 0
-        i = nz[0][0] # index of first such row
-        self.w0 = (1 - Y[i] * np.inner(self.alpha * Y, K[i])) / Y[i]
+            nz = (self.alpha > 0)
 
-        # verify they're all approx same, and find their average
-        numnonzero = nz[0].shape[0]
-        numdiff = 0
-        others = []#[self.w0]
-        #for i in range(al.shape[0]):
-        w0_sum = 0
-        for iw in range(numnonzero):
-            i = nz[0][iw]
-            w0_other = (1 - Y[i] * np.inner(self.alpha * Y, K[i])) / Y[i]
-            others.append(w0_other)
-            w0_diff = abs((w0_other - self.w0) / self.w0)
-            if w0_diff > 0.001:
-                numdiff += 1
-                #logging.debug("   different %d th w0: %f", i, w0_other)
-                #logging.debug("      al=%f  mu=%f", al[i], mu[i])
-            else:
-                w0_sum += w0_other
-        new_w0 = w0_sum / (numnonzero - numdiff)
-        
-        logging.debug("w0: %f     \tminus avg w0 = %f",
-                      self.w0, self.w0-new_w0)
-        self.first_w0 = self.w0
-        self.w0 = new_w0
-        
+        w0_vals = (1 - Y[nz] * np.inner(self.alpha * Y, K[nz])) / Y[nz]
+
+        # Average out the w0s, most of which should be identical anyway.           
+        self.w0 = np.mean(w0_vals)
+
+        # logging
+        logging.debug("w0: %f", self.w0)
+        w0_diff = np.abs((w0_vals - self.w0) / self.w0)
+        numdiff = np.sum(w0_diff > 0.001)
         if numdiff > 0:
             logging.debug("Num nonzero = %d/%d. Num different = %d/%d", 
-                          numnonzero, n, numdiff, n)
+                          np.sum(nz), n, numdiff, n)
             logging.debug("  alpha nonzero = %d/%d", np.sum(nz_al), n)
             logging.debug("     mu nonzero = %d/%d", np.sum(nz_mu), n)
         
@@ -178,16 +163,7 @@ class SVM(object):
         class_prediction = ((class_prediction + 1) / 2).astype(int)
          
         c_matrix = util.confusion_matrix(class_prediction, Y_test, 2)
-        acc = util.get_accuracy(c_matrix)
         util.report_accuracy(c_matrix, False)
 
-        class_prediction = np.sign(pred + self.first_w0 - self.w0)
-        class_prediction = ((class_prediction + 1) / 2).astype(int)
-        c_matrix = util.confusion_matrix(class_prediction, Y_test, 2)
-        old_acc = util.get_accuracy(c_matrix)
-        if acc < old_acc:
-            logging.debug("\tOld accuracy was better! %f (old) vs %f (avg)",
-                          old_acc, acc)
-        
         return c_matrix
      

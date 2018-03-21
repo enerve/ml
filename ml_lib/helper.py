@@ -137,7 +137,8 @@ def onevsall_multiclassify_validation(X, Y, X_val, Y_val, n,
     
     acc_list = []
     for i in range(n):
-#         if i!=2: continue
+        #TODO
+        #if i!=0: continue
         
         Yb = np.zeros((Y.shape[0]))
         Yb[Y==i] = 1

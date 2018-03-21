@@ -179,17 +179,17 @@ def main():
                     pre_svm_alg = "sk" if reps % 2 == 0 else "my"
                     
                     # TODO:remove
-#                     if pre_svm_cv_x == "l": continue
+#                    if pre_svm_cv_x == "l": continue
                     if pre_svm_alg == "sk": continue
                     
                     if pre_svm_cv_x == "b":
                         lam_val = [math.pow(1.5, p+1)*10 for p in range(7)]
-                        b_val = [(p+1)/40 for p in range(27)]
-#                         lam_val = [math.pow(1.5, p+5)*10 for p in range(2)]
-#                         b_val = [(p+1)/40 for p in range(1)]
+                        b_val = [(p+1)/20 for p in range(27)]
+#                         lam_val = [math.pow(1.5, p+1)*10 for p in range(1)]
+#                         b_val = [(p+17)/40 for p in range(3)]
                     elif pre_svm_cv_x == "l":
                         lam_val = [math.pow(1.2, p+1)*10 for p in range(27)]
-                        b_val = [(p+2)/20 for p in range(7)]
+                        b_val = [(p+1)/10 for p in range(7)]
 #                         lam_val = [math.pow(1.2, p+23)*10 for p in range(1)]
 #                         b_val = [(p+2)/20 for p in range(1)]
                     logger.debug(lam_val)
@@ -208,8 +208,8 @@ def main():
                         lmbd_sk if pre_svm_alg=="sk" else lmbd_my,
                         b_val, lam_val)
         
-                    for i in range(num_classes):
-                        logger.info("--- Class %d", i)
+                    for i in range(len(acc_list)):
+                        logger.info("--- Class #%d", i)
                         acc_matrix = np.array(acc_list[i])
                         #acc_matrix = np.genfromtxt(util.prefix() +
                         #                           '995985.0' + "_cv_%d.csv" % (i),
