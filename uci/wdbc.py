@@ -146,7 +146,8 @@ def main():
         util.pre_alg = "svm"
         from ml_lib.svm import SVM, RBFKernel
 
-        lam_val = [math.pow(1.2, p) for p in range(20)]
+        #lam_val = [math.pow(1.2, p) for p in range(-10,20)]
+        lam_val = [p/10 for p in range(1,350)]
 
         acc = np.zeros(len(lam_val))
         for i, lam in enumerate(lam_val):

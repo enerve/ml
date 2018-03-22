@@ -178,26 +178,16 @@ def main():
                     pre_svm_cv_x = "b" if reps < 2 else "l"
                     pre_svm_alg = "sk" if reps % 2 == 0 else "my"
                     
-                    # TODO:remove
-#                    if pre_svm_cv_x == "l": continue
-                    if pre_svm_alg == "sk": continue
-                    
                     if pre_svm_cv_x == "b":
                         lam_val = [math.pow(1.5, p+1)*10 for p in range(7)]
                         b_val = [(p+1)/20 for p in range(27)]
-#                         lam_val = [math.pow(1.5, p+1)*10 for p in range(1)]
-#                         b_val = [(p+17)/40 for p in range(3)]
                     elif pre_svm_cv_x == "l":
                         lam_val = [math.pow(1.2, p+1)*10 for p in range(27)]
                         b_val = [(p+1)/10 for p in range(7)]
-#                         lam_val = [math.pow(1.2, p+23)*10 for p in range(1)]
-#                         b_val = [(p+2)/20 for p in range(1)]
                     logger.debug(lam_val)
                     logger.debug(b_val)
                     
                     lmbd_sk = lambda X, Y, b, lam: SVMSkSVC(X, Y, lam, b, kernel='rbf')
-#                     lmbd_my = lambda lam, b, X, Y: SVM(X, Y, lam, kernel=RBFKernel(b))
-#                     lmbd_my = lambda X, Y, b, lam: SVM(X).reset(Y, lam, kernel=RBFKernel(b))
                     # Use a single instance so K matrix can be shared better
                     single_svm = SVM(X)
                     lmbd_my = lambda X, Y, b, lam, svm=single_svm: \

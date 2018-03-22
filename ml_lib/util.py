@@ -155,7 +155,7 @@ def draw_classes_data(X, Y, colA, colB):
 def plot_accuracy(acc, x_values, line_labels=None, pref=None):
     plt.plot(x_values, acc, 'b-')
     plt.xlabel('C or lambda')
-    plt.ylabel('Test accuracy')
+    plt.ylabel('Validation accuracy')
     fname = prefix() \
         + ("%s_"%pref if pref else '') \
         + 'val.png'

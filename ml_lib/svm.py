@@ -87,9 +87,6 @@ class SVM(object):
         Y = self.Y * 2 - 1
         Y_ = Y.reshape((n, 1))
 
-#         self.lin_clf = svm.LinearSVC(loss='hinge')
-#         self.lin_clf.fit(X, Y)
-        
         if self.K is None:
             self.K = self.kernel.compute(X, X)
         K = self.K
