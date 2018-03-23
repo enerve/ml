@@ -88,7 +88,7 @@ def onevsall_multiclassify(X, Y, X_test, Y_test, n, create_classifier):
         Yb_test = np.zeros((Y_test.shape[0]))
         Yb_test[Y_test==i] = 1
 
-        classifier = create_classifier(X, Yb)
+        classifier = create_classifier(X, Yb, c=i)
         #logging.info(classifier.classify(X, Yb))
         
         logging.debug(classifier.classify(X_test, Yb_test))
@@ -177,3 +177,31 @@ def onevsall_multiclassify_validation(X, Y, X_val, Y_val, n,
     logging.debug(".......")
     
     return c_matrix, acc_list
+
+def classify_validation(X, Y, X_val, Y_val, 
+                        create_classifier_validated,
+                        var1_list, var2_list):
+    logging.info("Running classifier validation")
+    
+    def classifier_and_accuracy(var1, var2):
+        classifier = create_classifier_validated(X, Y, var1, var2)
+        cm_v = classifier.classify(X_val, Y_val)
+        acc = util.get_accuracy(cm_v)
+        return (classifier, acc, acc)
+
+    best_classifier, best_acc_v, acc_list_v = validate_for_best(
+        lambda var1: validate_for_best(
+            lambda var2, var1=var1:
+                classifier_and_accuracy(var1=var1, var2=var2),
+            var2_list, 1),
+        var1_list, 0)
+
+    logging.debug("")
+    logging.debug("Best:")
+    c_matrix = best_classifier.classify(X_val, Y_val)
+
+    logging.info('Validation acc: %f%%', util.get_accuracy(c_matrix))
+    logging.debug('%s', c_matrix)
+    logging.debug(".......")
+    
+    return c_matrix, acc_list_v

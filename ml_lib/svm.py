@@ -79,7 +79,7 @@ class SVM(object):
     def learn(self):
         """ Learns the alpha variables of the dual and precomputes w0 """
 
-        self.logger.debug("SVM with lambda = %f", self.lam)
+        self.logger.debug("SVM with lambda = %f", self.lam or 0)
         logging.debug("%s", self.kernel)
 
         X = self.X
@@ -111,14 +111,19 @@ class SVM(object):
         
         # precompute w0
         
+        alpha_max = np.max(self.alpha)
+        self.logger.debug("Alpha range: zero to %f", alpha_max)
+        
         if self.lam: #soft SVM
-            nz_al = (self.alpha / self.lam > 0.01)
-            nz_mu = ((self.lam - self.alpha) / self.lam > 0.01)
+            nz_al = (self.alpha / alpha_max > 0.01)
+            nz_mu = ((self.lam - self.alpha) / alpha_max > 0.01)
             nz = nz_al & nz_mu
         else:
-            nz = (self.alpha > 0)
+            nz_al = self.alpha / alpha_max > 0.01
+            nz = nz_al
 
         w0_vals = (1 - Y[nz] * np.inner(self.alpha * Y, K[nz])) / Y[nz]
+        
 
         # Average out the w0s, most of which should be identical anyway.           
         self.w0 = np.mean(w0_vals)
@@ -127,10 +132,11 @@ class SVM(object):
         logging.debug("w0: %f", self.w0)
         w0_diff = np.abs((w0_vals - self.w0) / self.w0)
         numdiff = np.sum(w0_diff > 0.001)
-        if numdiff > 0:
-            logging.debug("Num nonzero = %d/%d. Num different = %d/%d", 
-                          np.sum(nz), n, numdiff, n)
-            logging.debug("  alpha nonzero = %d/%d", np.sum(nz_al), n)
+#         if numdiff > 0:
+        logging.debug("Num nonzero = %d/%d. Num different = %d/%d", 
+                      np.sum(nz), n, numdiff, n)
+        logging.debug("  alpha nonzero = %d/%d", np.sum(nz_al), n)
+        if self.lam:
             logging.debug("     mu nonzero = %d/%d", np.sum(nz_mu), n)
         
 

@@ -169,10 +169,10 @@ def main():
             if run_single_multiclassifier:
                 cm = helper.onevsall_multiclassify(
                     X, Ya, X_valid, Ya_valid, num_classes,
-                    lambda X, Y, lam=14.4, b=0.1: SVM(X, Y, lam, kernel=RBFKernel(b)))
+                    lambda X, Y, c, lam=14.4, b=0.1: SVM(X, Y, lam, kernel=RBFKernel(b)))
                 util.report_accuracy(cm)
 
-            run_cross_validation = True
+            run_cross_validation = False
             if run_cross_validation:
                 for reps in range(4):
                     pre_svm_cv_x = "b" if reps < 2 else "l"
@@ -192,7 +192,7 @@ def main():
                     single_svm = SVM(X)
                     lmbd_my = lambda X, Y, b, lam, svm=single_svm: \
                         svm.initialize(Y, lam, RBFKernel(b))
-                            
+
                     cm, acc_list = helper.onevsall_multiclassify_validation(
                         X, Ya, X_valid, Ya_valid, num_classes,
                         lmbd_sk if pre_svm_alg=="sk" else lmbd_my,
@@ -217,6 +217,19 @@ def main():
                             util.plot_accuracies(acc_matrix, lam_val, 
                                                  "Lambda (C)", b_val, suff)
     
+            run_multiclassifier_separate_params = True
+            if run_multiclassifier_separate_params:
+                param = {
+                    0: {'b': 0.25, 'lambda': 113},
+                    1: {'b': 0.6, 'lambda': 113},
+                    2: {'b': 0.7, 'lambda': 75}}
+                
+                cm = helper.onevsall_multiclassify(
+                    X, Ya, X_test, Ya_test, num_classes,
+                    lambda X, Y, c: SVM(X, Y, 
+                                        param[c]['lambda'],
+                                        kernel=RBFKernel(param[c]['b'])))
+                util.report_accuracy(cm)
 
 if __name__ == '__main__':
     main()

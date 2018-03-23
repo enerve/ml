@@ -45,7 +45,8 @@ def main():
     X = data[:, features_to_use()]
 
     X, Y, X_valid, Y_valid, X_test, Y_test = \
-        data_util.split_into_train_test_sets(X, Y, None, args.test_portion)
+        data_util.split_into_train_test_sets(X, Y, args.validation_portion,
+                                             args.test_portion)
     
     logger.debug("%s %s", X.shape, X_test.shape)
 
@@ -98,13 +99,11 @@ def main():
         util.pre_alg = "perceptron"
         from ml_lib.perceptron import Perceptron
 
-        Ya = Y
-        Ya_test = Y_test
         split_points = [-1, 0]
         n = len(split_points)
         
         helper.onevsone_multiclassify(
-            X, Ya, X_test, Ya_test, n,
+            X, Y, X_test, Y_test, n,
             lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 30000, 0))
             
     if args.logistic:
@@ -112,14 +111,11 @@ def main():
         util.pre_alg = "logistic"
         from ml_lib.logistic import Logistic
         
-        
-        Ya = Y
-        Ya_test = Y_test
         split_points = [-1, 0]
         n = len(split_points)
 
         helper.onevsone_multiclassify(
-            X, Ya, X_test, Ya_test, n,
+            X, Y, X_test, Y_test, n,
             lambda X, Y: Logistic(X, Y, step_size=0.001, max_steps=15000,
                                   reg_constant=1))
         
@@ -145,22 +141,71 @@ def main():
         logger.info("Support Vector Machine...")
         util.pre_alg = "svm"
         from ml_lib.svm import SVM, RBFKernel
-
-        #lam_val = [math.pow(1.2, p) for p in range(-10,20)]
-        lam_val = [p/10 for p in range(1,350)]
-
-        acc = np.zeros(len(lam_val))
-        for i, lam in enumerate(lam_val):
-            svm_classifier = SVM(X, Y, lam)#), kernel=RBFKernel(1))
-            #util.report_accuracy(svm_classifier.classify(X, Y))
-            cm = svm_classifier.classify(X_test, Y_test)
+        
+        single_svm_test = False
+        if single_svm_test:
+            cm = SVM(X, Y, lam=None).classify(X_test, Y_test)
             util.report_accuracy(cm)
-            acc[i] = util.get_accuracy(cm)
 
-        logger.info("\nAccuracies found for lambda:")
-        for i, lam in enumerate(lam_val):
-            logger.info("%f: \t%f", lam, acc[i])
-        util.plot_accuracy(acc, lam_val)
+        single_svm_rbf_test = False
+        if single_svm_rbf_test:
+            svm = SVM(X, Y, lam=100, kernel=RBFKernel(0.3))
+            cm = svm.classify(X_test, Y_test)
+            util.report_accuracy(cm)
+
+        linear_svm_validation = False
+        if linear_svm_validation:
+            #lam_val = [math.pow(1.2, p) for p in range(-10,20)]
+            lam_val = [p/2 for p in range(1,200)]
+    
+            acc = np.zeros(len(lam_val))
+            for i, lam in enumerate(lam_val):
+                svm_classifier = SVM(X, Y, lam)#), kernel=RBFKernel(1))
+                #util.report_accuracy(svm_classifier.classify(X, Y))
+                cm = svm_classifier.classify(X_valid, Y_valid)
+                util.report_accuracy(cm)
+                acc[i] = util.get_accuracy(cm)
+    
+            logger.info("\nAccuracies found for lambda:")
+            for i, lam in enumerate(lam_val):
+                logger.info("%f: \t%f", lam, acc[i])
+            util.plot_accuracy(acc, lam_val)
+
+        rbf_svm_validation = True
+        if rbf_svm_validation:
+            for reps in range(2):
+                pre_svm_cv_x = "b" if reps == 0 else "l"
+                
+                if pre_svm_cv_x == "b":
+                    lam_val = [math.pow(1.5, p+1)*10 for p in range(7)]
+                    b_val = [(p+1)/20 for p in range(27)]
+                elif pre_svm_cv_x == "l":
+                    lam_val = [math.pow(1.2, p+1)*10 for p in range(27)]
+                    b_val = [(p+1)/10 for p in range(7)]
+                logger.debug(lam_val)
+                logger.debug(b_val)
+    
+                # Use a single instance so K matrix can be shared better
+                single_svm = SVM(X)
+                lmbd_classifier = lambda X, Y, b, lam, svm=single_svm: \
+                    svm.initialize(Y, lam, RBFKernel(b))
+
+                cm, acc_2d_list = helper.classify_validation(
+                    X, Y, X_valid, Y_valid, lmbd_classifier,
+                    b_val, lam_val)
+
+                acc_matrix = np.array(acc_2d_list)
+                logger.info("%s", acc_matrix)
+                
+                suff = "val_%s"%(pre_svm_cv_x)
+                np.savetxt(util.prefix() + suff + ".csv",
+                           acc_matrix, delimiter=",", fmt='%.3f')
+                if pre_svm_cv_x == 'b':
+                    util.plot_accuracies(acc_matrix.T, b_val, "RBF width b",
+                                         lam_val, "Lambda (C)", suff)
+                elif pre_svm_cv_x == 'l':
+                    util.plot_accuracies(acc_matrix, lam_val,  "Lambda (C)",
+                                         b_val, "RBF width b", suff)
 
 if __name__ == '__main__':
     main()

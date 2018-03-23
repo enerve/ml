@@ -152,29 +152,41 @@ def draw_classes_data(X, Y, colA, colB):
     plt.show()
     return plt
 
-def plot_accuracy(acc, x_values, line_labels=None, pref=None):
-    plt.plot(x_values, acc, 'b-')
-    plt.xlabel('C or lambda')
-    plt.ylabel('Validation accuracy')
+def save_plot(pref=None):
     fname = prefix() \
         + ("%s_"%pref if pref else '') \
         + 'val.png'
     plt.savefig(fname, bbox_inches='tight')
     logger.debug(fname)
+
+def hist(x, x_label, bins=100, pref=None):
+    logger.debug("%s: %s", x_label, x.shape[0])
+    plt.hist(x, bins)
+    plt.xlabel(x_label)
+    save_plot(pref)
     plt.show()
 
-def plot_accuracies(acc_matrix, x_values, x_label, z_labels=None, pref=None):
+def plot(x, y, x_label, y_label, pref=None):
+    plt.plot(x, y, 'b-')
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    save_plot(pref)
+    plt.show()
+
+def plot_accuracy(acc, x_values, line_labels=None, pref=None):
+    plot(x_values, acc, 'C or lambda', 'Validation accuracy', pref)
+
+def plot_accuracies(acc_matrix, x_values, x_label, z_labels=None,
+                    z_title = None, pref=None):
     for i, acc in enumerate(acc_matrix):
         plt.plot(x_values, acc, '-', label="%0.2f" %(z_labels[i]))
 
     plt.xlabel(x_label)
     plt.ylabel('Validation accuracy')
-    fname = prefix() \
-        + ("%s_"%pref if pref else '') \
-        + 'val.png'
-    plt.legend(loc=4)
-    plt.savefig(fname, bbox_inches='tight')
-    logger.debug(fname)
+    plt.legend(loc=4, title=z_title)
+#     if z_title:
+#         plt.legend()
+    save_plot(pref)
 #     plt.show()
     plt.clf() # clear figure
 
