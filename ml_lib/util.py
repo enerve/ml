@@ -184,8 +184,6 @@ def plot_accuracies(acc_matrix, x_values, x_label, z_labels=None,
     plt.xlabel(x_label)
     plt.ylabel('Validation accuracy')
     plt.legend(loc=4, title=z_title)
-#     if z_title:
-#         plt.legend()
     save_plot(pref)
 #     plt.show()
     plt.clf() # clear figure
@@ -208,5 +206,5 @@ def confusion_matrix(Y_actual, Y_guess, n):
     for i in range(n):
         for j in range(n):
             c_matrix[i, j] = np.sum(
-                np.logical_and((Y_guess == j), (Y_actual == i)))
+                np.logical_and((Y_actual == i), (Y_guess == j)))
     return c_matrix

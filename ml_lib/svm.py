@@ -164,8 +164,8 @@ class SVM(object):
         pred = self.predict(X_test)
         class_prediction = np.sign(pred)
         class_prediction = ((class_prediction + 1) / 2).astype(int)
-         
-        c_matrix = util.confusion_matrix(class_prediction, Y_test, 2)
+
+        c_matrix = util.confusion_matrix(Y_test, class_prediction, 2)
         util.report_accuracy(c_matrix, False)
 
         return c_matrix

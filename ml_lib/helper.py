@@ -63,10 +63,29 @@ def onevsone_multiclassify(X, Y, X_test, Y_test, num_classes,
             Yb[Ya==i] = 1
 
             classifier = create_classifier(Xa, Yb)
+
+            # Test this pair's classification
+            logging.debug(" ==> Testing %s vs %s", i, j)
+            id_ij = np.logical_or(Y_test == i, Y_test == j)
+            n_ij = np.sum(id_ij)
+            Xa_test = X_test[id_ij]
+            Ya_test = Y_test[id_ij]
+            Yb_test = np.zeros(n_ij)
+            Yb_test[Ya_test==i] = 1
+            cm_test = classifier.classify(Xa_test, Yb_test)
+            logger.debug("\t this test accuracy = %f   (%d / %d)",
+                          util.get_accuracy(cm_test), np.sum(Yb_test), 
+                          n_ij)
+            logger.debug("\n%s", cm_test)
+
+            # Record test prediction for later comparison
             Yp[:, i, j] = classifier.predict(X_test)
             Yp[:, j, i] = -Yp[:, i, j]
 
+            logger.debug("%s", Yp[:, i, j])
+
     Yp = np.sum(Yp, axis=2)
+    logger.debug("%s", Yp)
     Y_guess = np.argmax(Yp, axis=1)
     
     c_matrix = util.confusion_matrix(Y_test, Y_guess, num_classes)    

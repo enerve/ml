@@ -141,7 +141,7 @@ def main():
             util.pre_alg = "svm"
             from ml_lib.svm import SVM, RBFKernel
             from ml_lib.svm_sk_svc import SVMSkSVC
-            from ml_lib.svm_sk_linear import SVMSkLinear
+            #from ml_lib.svm_sk_linear import SVMSkLinear
 
             run_single_classifier = False
             if run_single_classifier: 
@@ -157,16 +157,17 @@ def main():
                 svm_classifier = SVM(X, Yb, 14.4, kernel=RBFKernel(0.1))
                 util.report_accuracy(svm_classifier.classify(X_valid, Yb_valid))
 
-            run_single_linear_multiclassifier = False
-            if run_single_linear_multiclassifier:
+            run_onevsone_multiclassifier = False
+            if run_onevsone_multiclassifier:
                 helper.onevsone_multiclassify(
                     X, Ya, X_test, Ya_test, num_classes,
-                    #lambda X, Y, lam=1: SVMSkLinear(X, Y, lam))
-                    lambda X, Y, lam=14.4: SVM(X, Y, lam, kernel=RBFKernel(0.1)))
-                    #lambda X, Y, lam=1, b=0.5: SVMSkSVC(X, Y, lam, b, kernel='rbf'))
+                    #lambda X, Y, lam=1: SVMSkLinear(X, Y, lam)
+                    lambda X, Y, lam=14.4: SVM(X, Y, lam)#, kernel=RBFKernel(0.1))
+                    #lambda X, Y, lam=1, b=0.5: SVMSkSVC(X, Y, lam, b, kernel='rbf')
+                    )
             
-            run_single_multiclassifier = False
-            if run_single_multiclassifier:
+            run_onevsall_multiclassifier = False
+            if run_onevsall_multiclassifier:
                 cm = helper.onevsall_multiclassify(
                     X, Ya, X_valid, Ya_valid, num_classes,
                     lambda X, Y, c, lam=14.4, b=0.1: SVM(X, Y, lam, kernel=RBFKernel(b)))
@@ -230,6 +231,7 @@ def main():
                                         param[c]['lambda'],
                                         kernel=RBFKernel(param[c]['b'])))
                 util.report_accuracy(cm)
+
 
 if __name__ == '__main__':
     main()
