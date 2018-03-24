@@ -171,7 +171,8 @@ def plot(x, y, x_label, y_label, pref=None):
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     save_plot(pref)
-    plt.show()
+#     plt.show()
+    plt.clf() # clear figure
 
 def plot_accuracy(acc, x_values, line_labels=None, pref=None):
     plot(x_values, acc, 'C or lambda', 'Validation accuracy', pref)

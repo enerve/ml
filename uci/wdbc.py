@@ -102,7 +102,7 @@ def main():
         split_points = [-1, 0]
         n = len(split_points)
         
-        helper.onevsone_multiclassify(
+        helper.classify_one_vs_one([],
             X, Y, X_test, Y_test, n,
             lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 30000, 0))
             
@@ -114,7 +114,7 @@ def main():
         split_points = [-1, 0]
         n = len(split_points)
 
-        helper.onevsone_multiclassify(
+        helper.classify_one_vs_one([],
             X, Y, X_test, Y_test, n,
             lambda X, Y: Logistic(X, Y, step_size=0.001, max_steps=15000,
                                   reg_constant=1))
@@ -171,7 +171,7 @@ def main():
                 logger.info("%f: \t%f", lam, acc[i])
             util.plot_accuracy(acc, lam_val)
 
-        rbf_svm_validation = True
+        rbf_svm_validation = False
         if rbf_svm_validation:
             for reps in range(2):
                 pre_svm_cv_x = "b" if reps == 0 else "l"
@@ -190,9 +190,9 @@ def main():
                 lmbd_classifier = lambda X, Y, b, lam, svm=single_svm: \
                     svm.initialize(Y, lam, RBFKernel(b))
 
-                cm, acc_2d_list = helper.classify_validation(
-                    X, Y, X_valid, Y_valid, lmbd_classifier,
-                    b_val, lam_val)
+                cm, acc_2d_list = helper.classify([b_val, lam_val], X, Y,
+                                                  X_valid,  Y_valid,
+                                                  lmbd_classifier)
 
                 acc_matrix = np.array(acc_2d_list)
                 logger.info("%s", acc_matrix)

@@ -107,7 +107,7 @@ def main():
             util.pre_alg = "perceptron"
             from ml_lib.perceptron import Perceptron
             
-            helper.onevsone_multiclassify(
+            helper.classify_one_vs_one([],
                 X, Ya, X_test, Ya_test, num_classes,
                 lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 8000, 0))
             
@@ -116,7 +116,7 @@ def main():
             util.pre_alg = "logistic"
             from ml_lib.logistic import Logistic
             
-            helper.onevsone_multiclassify(
+            helper.classify_one_vs_one([],
                 X, Ya, X_test, Ya_test, num_classes,
                 lambda X, Y: Logistic(X, Y, step_size=0.001, max_steps=15000,
                                       reg_constant=0.01))
@@ -159,7 +159,7 @@ def main():
 
             run_onevsone_multiclassifier = False
             if run_onevsone_multiclassifier:
-                helper.onevsone_multiclassify(
+                helper.classify_one_vs_one([],
                     X, Ya, X_test, Ya_test, num_classes,
                     #lambda X, Y, lam=1: SVMSkLinear(X, Y, lam)
                     lambda X, Y, lam=14.4: SVM(X, Y, lam)#, kernel=RBFKernel(0.1))
@@ -173,53 +173,55 @@ def main():
                     lambda X, Y, c, lam=14.4, b=0.1: SVM(X, Y, lam, kernel=RBFKernel(b)))
                 util.report_accuracy(cm)
 
-            run_cross_validation = False
-            if run_cross_validation:
-                for reps in range(4):
-                    pre_svm_cv_x = "b" if reps < 2 else "l"
-                    pre_svm_alg = "sk" if reps % 2 == 0 else "my"
-                    
+            run_rbf_cross_validation = True
+            if run_rbf_cross_validation:
+                for pre_svm_cv_x in ["b", "l"]:
                     if pre_svm_cv_x == "b":
                         lam_val = [math.pow(1.5, p+1)*10 for p in range(7)]
                         b_val = [(p+1)/20 for p in range(27)]
                     elif pre_svm_cv_x == "l":
                         lam_val = [math.pow(1.2, p+1)*10 for p in range(27)]
                         b_val = [(p+1)/10 for p in range(7)]
+
                     logger.debug(lam_val)
                     logger.debug(b_val)
-                    
-                    lmbd_sk = lambda X, Y, b, lam: SVMSkSVC(X, Y, lam, b, kernel='rbf')
+
+                    lmbd_sk = lambda X, Y, b, lam: SVMSkSVC(X, Y, lam, b,
+                                                            kernel='rbf')
                     # Use a single instance so K matrix can be shared better
                     single_svm = SVM(X)
                     lmbd_my = lambda X, Y, b, lam, svm=single_svm: \
                         svm.initialize(Y, lam, RBFKernel(b))
 
-                    cm, acc_list = helper.onevsall_multiclassify_validation(
-                        X, Ya, X_valid, Ya_valid, num_classes,
-                        lmbd_sk if pre_svm_alg=="sk" else lmbd_my,
-                        b_val, lam_val)
-        
-                    for i in range(len(acc_list)):
-                        logger.info("--- Class #%d", i)
-                        acc_matrix = np.array(acc_list[i])
-                        #acc_matrix = np.genfromtxt(util.prefix() +
-                        #                           '995985.0' + "_cv_%d.csv" % (i),
-                        #                           delimiter=",")
-                        logger.info("%s", acc_matrix)
-                        
-                        suff = "val_%s_class%d_%s"%(pre_svm_alg, i,
-                                                    pre_svm_cv_x)
-                        np.savetxt(util.prefix() + suff + ".csv",
-                                   acc_matrix, delimiter=",", fmt='%.3f')
-                        if pre_svm_cv_x == 'b':
-                            util.plot_accuracies(acc_matrix.T, b_val,
-                                                 "RBF width b", lam_val, suff)
-                        elif pre_svm_cv_x == 'l':
-                            util.plot_accuracies(acc_matrix, lam_val, 
-                                                 "Lambda (C)", b_val, suff)
+                    for pre_svm_alg in ["sk", "my"]:
+                        cm, acc_list = helper.onevsall_multiclassify_validation(
+                            X, Ya, X_valid, Ya_valid, num_classes,
+                            lambda X, Y, X_val, Y_val:
+                                helper.class_validation_helper_two_var(
+                                    b_val, lam_val, X, Y, X_val, Y_val,
+                                    lmbd_sk if pre_svm_alg=="sk" else lmbd_my))
+            
+                        for i in range(len(acc_list)):
+                            logger.info("--- Class #%d", i)
+                            acc_matrix = np.array(acc_list[i])
+                            #acc_matrix = np.genfromtxt(util.prefix() +
+                            #                           '995985.0' + "_cv_%d.csv" % (i),
+                            #                           delimiter=",")
+                            logger.info("%s", acc_matrix)
+                            
+                            suff = "val_%s_class%d_%s"%(pre_svm_alg, i,
+                                                        pre_svm_cv_x)
+                            np.savetxt(util.prefix() + suff + ".csv",
+                                       acc_matrix, delimiter=",", fmt='%.3f')
+                            if pre_svm_cv_x == 'b':
+                                util.plot_accuracies(acc_matrix.T, b_val,
+                                                     "RBF width b", lam_val, suff)
+                            elif pre_svm_cv_x == 'l':
+                                util.plot_accuracies(acc_matrix, lam_val, 
+                                                     "Lambda (C)", b_val, suff)
     
-            run_multiclassifier_separate_params = True
-            if run_multiclassifier_separate_params:
+            run_rbf_multiclass = False
+            if run_rbf_multiclass:
                 param = {
                     0: {'b': 0.25, 'lambda': 113},
                     1: {'b': 0.6, 'lambda': 113},
@@ -230,6 +232,81 @@ def main():
                     lambda X, Y, c: SVM(X, Y, 
                                         param[c]['lambda'],
                                         kernel=RBFKernel(param[c]['b'])))
+                util.report_accuracy(cm)
+
+            run_linear_one_vs_one_cross_validation = False
+            if run_linear_one_vs_one_cross_validation:
+                lam_val = [math.pow(1.2, p+1)*10 for p in range(27)]
+                logger.debug(lam_val)
+
+                cm, acc_list = helper.classify_one_vs_one([lam_val],
+                    X, Ya, X_valid, Ya_valid, num_classes, SVM)
+    
+                #TODO: move inside helper.onevsone
+                ai = 0
+                for i in range(num_classes - 1):
+                    for j in range(i+1, num_classes):
+                        logger.info("--- Class %d vs %d", i, j)
+                        acc_matrix = np.array(acc_list[ai])
+                        ai += 1
+                        logger.info("%s", acc_matrix)
+                        
+                        suff = "val_class%dx%d"%(i, j)
+                        np.savetxt(util.prefix() + suff + ".csv",
+                                   acc_matrix, delimiter=",", fmt='%.3f')
+                ai = 0
+                for i in range(num_classes - 1):
+                    for j in range(i+1, num_classes):
+                        acc_matrix = np.array(acc_list[ai])
+                        ai += 1
+                        util.plot_accuracy(acc_matrix, lam_val, None, suff)
+
+            run_rbf_one_vs_one_cross_validation = False
+            if run_rbf_one_vs_one_cross_validation:
+                
+                lam_val = [math.pow(1.5, p+1)*10 for p in range(7)]
+                b_val = [(p+1)/20 for p in range(27)]
+                # Use a single instance so K matrix can be shared better
+#                     single_svm = SVM(X)
+                lmbd_my = lambda X, Y, b, lam: \
+                    SVM(X).initialize(Y, lam, RBFKernel(b))
+                
+                cm, acc_list = helper.classify_one_vs_one([b_val, lam_val],
+                    X, Ya, X_valid, Ya_valid, num_classes, lmbd_my)
+    
+                #TODO: move inside helper.onevsone
+                ai = 0
+                for i in range(num_classes - 1):
+                    for j in range(i+1, num_classes):
+                        logger.info("--- Class %d vs %d", i, j)
+                        acc_matrix = np.array(acc_list[ai])
+                        ai += 1
+                        logger.info("%s", acc_matrix)
+                        
+                        suff = "val_class%dx%d"%(i, j)
+                        np.savetxt(util.prefix() + suff + ".csv",
+                                   acc_matrix, delimiter=",", fmt='%.3f')
+                ai = 0
+                for i in range(num_classes - 1):
+                    for j in range(i+1, num_classes):
+                        acc_matrix = np.array(acc_list[ai])
+                        ai += 1
+                        util.plot_accuracies(acc_matrix.T, b_val,
+                                             "RBF width b", lam_val, suff)
+
+            
+            run_linear_multiclass = True
+            if run_linear_multiclass:
+                lam_val = [[0, 25, 550],
+                           [0,  0, 600],
+                           [0,  0,   0]]
+                
+                cm, acc_list = helper.onevsone_multiclassify(
+                    X, Ya, X_test, Ya_test, num_classes,
+                    lambda X, Y, X_val, Y_val, info:
+                        helper.classifier_helper(
+                            X, Y, X_val, Y_val,
+                            lambda X, Y: SVM(X, Y, lam_val[info[0]][info[1]])))
                 util.report_accuracy(cm)
 
 
