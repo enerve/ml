@@ -48,35 +48,6 @@ def linear_multiclassify(X, Ya, X_test, Ya_test, num_classes,
     logging.debug('%s', c_matrix)
     return c_matrix
 
-
-def onevsall_multiclassify(X, Y, X_test, Y_test, n, create_classifier):
-    logging.info("Running one vs all multiclassifier on %d classes -----", n)
-
-    Yp = np.zeros((Y_test.shape[0], n))
-    for i in range(n):
-        Yb = np.zeros((Y.shape[0]))
-        Yb[Y==i] = 1
-        Yb_test = np.zeros((Y_test.shape[0]))
-        Yb_test[Y_test==i] = 1
-
-        classifier = create_classifier(X, Yb, c=i)
-        #logging.info(classifier.classify(X, Yb))
-        
-        logging.debug(classifier.classify(X_test, Yb_test))
-
-        Yp_i = classifier.predict(X_test)
-        Yp[:, i] = Yp_i
-
-    Yguess = np.argmax(Yp, axis=1)
-
-    c_matrix = util.confusion_matrix(Y_test, Yguess, n)    
-
-    logging.info('Overall test acc: %f%%', util.get_accuracy(c_matrix))
-    logging.debug('%s', c_matrix)
-    logging.debug(".......")
-    
-    return c_matrix
-
 def validate_for_best(acc_fn, var_list, depth):
     if var_list is None:
         return acc_fn()
@@ -131,8 +102,17 @@ def class_validation_helper_two_var(var1_list, var2_list, X, Y, X_val, Y_val,
             var2_list, 1),
         var1_list, 0)
 
-def onevsall_multiclassify_validation(X, Y, X_val, Y_val, num_classes,
-                                      class_validation_helper):
+def classify_one_vs_all(var_lists, X, Y, X_val, Y_val, num_classes,
+                        create_classifier):
+    classifier_helper = classifier_helper_for( \
+        var_lists, X, Y, X_val, Y_val, num_classes,
+                        create_classifier)
+
+    return one_vs_all_multiclassify(X, Y, X_val, Y_val, num_classes,
+                                    classifier_helper)
+
+def one_vs_all_multiclassify(X, Y, X_val, Y_val, num_classes,
+                             classifier_helper):
     logging.info("Running one vs all multiclassifier " + \
                  "validation on %d classes -----", num_classes)
     
@@ -145,24 +125,24 @@ def onevsall_multiclassify_validation(X, Y, X_val, Y_val, num_classes,
         Yb_val = np.zeros((Y_val.shape[0]))
         Yb_val[Y_val==i] = 1
         
-        best_classifier, best_acc_v, acc_list_v = \
-            class_validation_helper(X, Yb, X_val, Yb_val)
+        classifier, acc_v, acc_list_v = classifier_helper(X, Yb, 
+                                                          X_val, Yb_val,
+                                                          (i,))
         acc_list.append(acc_list_v)
 
         logging.debug("")
         logging.info("============== DONE class %d ===============", i)
         logging.debug("")
-        
-        logging.debug("Best:")
-        cm_b = best_classifier.classify(X_val, Yb_val)
+        cm_b = classifier.classify(X_val, Yb_val)
         logging.debug("%s", cm_b)
         
         # Record test prediction for later comparison
-        Yp_i = best_classifier.predict(X_val)
+        Yp_i = classifier.predict(X_val)
         Yp[:, i] = Yp_i
         
     logging.info("============== DONE ALL ===============")
     logging.debug("")
+    
     Yguess = np.argmax(Yp, axis=1)
 
     c_matrix = util.confusion_matrix(Y_val, Yguess, num_classes)
@@ -226,11 +206,11 @@ def classify_one_vs_one(var_lists, X, Y, X_val, Y_val, num_classes,
         var_lists, X, Y, X_val, Y_val, num_classes,
                         create_classifier)
 
-    return onevsone_multiclassify(X, Y, X_val, Y_val, num_classes,
-                                  classifier_helper)
+    return one_vs_one_multiclassify(X, Y, X_val, Y_val, num_classes,
+                                    classifier_helper)
 
-def onevsone_multiclassify(X, Y, X_val, Y_val, num_classes,
-                           classifier_helper):
+def one_vs_one_multiclassify(X, Y, X_val, Y_val, num_classes,
+                             classifier_helper):
     logging.info("Running one vs one multiclassifier " + \
                  "on %d classes -----", num_classes)
     

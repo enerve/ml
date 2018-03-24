@@ -168,12 +168,13 @@ def main():
             
             run_onevsall_multiclassifier = False
             if run_onevsall_multiclassifier:
-                cm = helper.onevsall_multiclassify(
+                cm = helper.classify_one_vs_all([],
                     X, Ya, X_valid, Ya_valid, num_classes,
-                    lambda X, Y, c, lam=14.4, b=0.1: SVM(X, Y, lam, kernel=RBFKernel(b)))
+                    lambda X, Y, c, lam=14.4, b=0.1: SVM(X, Y, lam, 
+                                                         kernel=RBFKernel(b)))
                 util.report_accuracy(cm)
 
-            run_rbf_cross_validation = True
+            run_rbf_cross_validation = False
             if run_rbf_cross_validation:
                 for pre_svm_cv_x in ["b", "l"]:
                     if pre_svm_cv_x == "b":
@@ -194,12 +195,11 @@ def main():
                         svm.initialize(Y, lam, RBFKernel(b))
 
                     for pre_svm_alg in ["sk", "my"]:
-                        cm, acc_list = helper.onevsall_multiclassify_validation(
+
+                        cm, acc_list = helper.classify_one_vs_all(
+                            [b_val, lam_val],
                             X, Ya, X_valid, Ya_valid, num_classes,
-                            lambda X, Y, X_val, Y_val:
-                                helper.class_validation_helper_two_var(
-                                    b_val, lam_val, X, Y, X_val, Y_val,
-                                    lmbd_sk if pre_svm_alg=="sk" else lmbd_my))
+                            lmbd_sk if pre_svm_alg=="sk" else lmbd_my)
             
                         for i in range(len(acc_list)):
                             logger.info("--- Class #%d", i)
@@ -227,11 +227,14 @@ def main():
                     1: {'b': 0.6, 'lambda': 113},
                     2: {'b': 0.7, 'lambda': 75}}
                 
-                cm = helper.onevsall_multiclassify(
+                cm, acc_list = helper.one_vs_all_multiclassify(
                     X, Ya, X_test, Ya_test, num_classes,
-                    lambda X, Y, c: SVM(X, Y, 
-                                        param[c]['lambda'],
-                                        kernel=RBFKernel(param[c]['b'])))
+                    lambda X, Y, X_val, Y_val, info:
+                        helper.classifier_helper(
+                            X, Y, X_val, Y_val,
+                            lambda X, Y: SVM(X, Y, param[info[0]]['lambda'],
+                                             kernel=RBFKernel(
+                                                 param[info[0]]['b']))))
                 util.report_accuracy(cm)
 
             run_linear_one_vs_one_cross_validation = False
@@ -295,13 +298,13 @@ def main():
                                              "RBF width b", lam_val, suff)
 
             
-            run_linear_multiclass = True
+            run_linear_multiclass = False
             if run_linear_multiclass:
                 lam_val = [[0, 25, 550],
                            [0,  0, 600],
                            [0,  0,   0]]
                 
-                cm, acc_list = helper.onevsone_multiclassify(
+                cm, acc_list = helper.one_vs_one_multiclassify(
                     X, Ya, X_test, Ya_test, num_classes,
                     lambda X, Y, X_val, Y_val, info:
                         helper.classifier_helper(
