@@ -253,7 +253,6 @@ def main():
                         acc_matrix = np.array(acc_list[ai])
                         ai += 1
                         logger.info("%s", acc_matrix)
-                        
                         suff = "val_class%dx%d"%(i, j)
                         np.savetxt(util.prefix() + suff + ".csv",
                                    acc_matrix, delimiter=",", fmt='%.3f')
@@ -262,9 +261,10 @@ def main():
                     for j in range(i+1, num_classes):
                         acc_matrix = np.array(acc_list[ai])
                         ai += 1
+                        suff = "val_class%dx%d"%(i, j)
                         util.plot_accuracy(acc_matrix, lam_val, None, suff)
 
-            run_rbf_one_vs_one_cross_validation = False
+            run_rbf_one_vs_one_cross_validation = True
             if run_rbf_one_vs_one_cross_validation:
                 
                 lam_val = [math.pow(1.5, p+1)*10 for p in range(7)]
@@ -285,7 +285,6 @@ def main():
                         acc_matrix = np.array(acc_list[ai])
                         ai += 1
                         logger.info("%s", acc_matrix)
-                        
                         suff = "val_class%dx%d"%(i, j)
                         np.savetxt(util.prefix() + suff + ".csv",
                                    acc_matrix, delimiter=",", fmt='%.3f')
@@ -294,6 +293,7 @@ def main():
                     for j in range(i+1, num_classes):
                         acc_matrix = np.array(acc_list[ai])
                         ai += 1
+                        suff = "val_class%dx%d"%(i, j)
                         util.plot_accuracies(acc_matrix.T, b_val,
                                              "RBF width b", lam_val, suff)
 
