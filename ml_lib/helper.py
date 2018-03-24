@@ -102,6 +102,44 @@ def class_validation_helper_two_var(var1_list, var2_list, X, Y, X_val, Y_val,
             var2_list, 1),
         var1_list, 0)
 
+def classifier_helper_for(var_lists, X, Y, X_val, Y_val, num_classes,
+                          create_classifier):
+    if len(var_lists) == 0:
+        classifier_helper = lambda X, Y, X_val, Y_val, info: \
+                classifier_helper(X, Y, X_val, Y_val, create_classifier)
+    elif len(var_lists) == 1:
+        classifier_helper = lambda X, Y, X_val, Y_val, info: \
+                class_validation_helper_one_var(
+                    var_lists[0], X, Y, X_val, Y_val, create_classifier)
+    elif len(var_lists) == 2:
+        classifier_helper = \
+            lambda X, Y, X_val, Y_val, info: \
+                class_validation_helper_two_var(
+                    var_lists[0], var_lists[1], X, Y, X_val, Y_val,
+                    create_classifier)
+    return classifier_helper
+
+def classify(var_lists, X, Y, X_val, Y_val, create_classifier):
+
+    return classify_class(X, Y, X_val, Y_val,
+                          classifier_helper_for(var_lists, X, Y, X_val, Y_val,
+                                                2, create_classifier))
+
+def classify_class(X, Y, X_val, Y_val, class_validation_helper):
+    logging.info("Running classifier")
+     
+    best_classifier, best_acc_v, acc_list_v = \
+        class_validation_helper(X, Y, X_val, Y_val, info=None)
+
+    logging.debug("")
+    c_matrix = best_classifier.classify(X_val, Y_val)
+ 
+    logging.info('Validation acc: %f%%', util.get_accuracy(c_matrix))
+    logging.debug('%s', c_matrix)
+    logging.debug(".......")
+     
+    return c_matrix, acc_list_v
+
 def classify_one_vs_all(var_lists, X, Y, X_val, Y_val, num_classes,
                         create_classifier):
     classifier_helper = classifier_helper_for( \
@@ -153,27 +191,6 @@ def one_vs_all_multiclassify(X, Y, X_val, Y_val, num_classes,
     
     return c_matrix, acc_list
 
-def classify(var_lists, X, Y, X_val, Y_val, create_classifier):
-
-    return classify_class(X, Y, X_val, Y_val,
-                          classifier_helper_for(var_lists, X, Y, X_val, Y_val,
-                                                2, create_classifier))
-
-def classify_class(X, Y, X_val, Y_val, class_validation_helper):
-    logging.info("Running classifier")
-     
-    best_classifier, best_acc_v, acc_list_v = \
-        class_validation_helper(X, Y, X_val, Y_val, info=None)
-
-    logging.debug("")
-    c_matrix = best_classifier.classify(X_val, Y_val)
- 
-    logging.info('Validation acc: %f%%', util.get_accuracy(c_matrix))
-    logging.debug('%s', c_matrix)
-    logging.debug(".......")
-     
-    return c_matrix, acc_list_v
-
 def one_vs_one_partition(X, Y, i, j):
     id_ij = np.logical_or(Y == i, Y == j)
     n_ij = np.sum(id_ij)
@@ -182,23 +199,6 @@ def one_vs_one_partition(X, Y, i, j):
     Yb = np.zeros(n_ij)
     Yb[Ya==i] = 1
     return (Xa, Yb)
-
-def classifier_helper_for(var_lists, X, Y, X_val, Y_val, num_classes,
-                          create_classifier):
-    if len(var_lists) == 0:
-        classifier_helper = lambda X, Y, X_val, Y_val, info: \
-                classifier_helper(X, Y, X_val, Y_val, create_classifier)
-    elif len(var_lists) == 1:
-        classifier_helper = lambda X, Y, X_val, Y_val, info: \
-                class_validation_helper_one_var(
-                    var_lists[0], X, Y, X_val, Y_val, create_classifier)
-    elif len(var_lists) == 2:
-        classifier_helper = \
-            lambda X, Y, X_val, Y_val, info: \
-                class_validation_helper_two_var(
-                    var_lists[0], var_lists[1], X, Y, X_val, Y_val,
-                    create_classifier)
-    return classifier_helper
 
 def classify_one_vs_one(var_lists, X, Y, X_val, Y_val, num_classes,
                         create_classifier):
