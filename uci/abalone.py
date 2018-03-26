@@ -284,11 +284,11 @@ def main():
             if run_rbf_one_vs_one_cross_validation:
                 for pre_svm_cv_x in ["l", "b"]:
                     if pre_svm_cv_x == "b":
-                        lam_val = [math.pow(1.5, p+1)*10 for p in range(7)]
+                        lam_val = [math.pow(2, p+1)*10 for p in range(7)]
                         b_val = [(p+1)/10 for p in range(27)]
                     elif pre_svm_cv_x == "l":
                         lam_val = [math.pow(1.2, p+1)*10 for p in range(27)]
-                        b_val = [(p+1)/10 for p in range(7)]
+                        b_val = [(p+1)/2.5 for p in range(7)]
 
                     logger.debug(lam_val)
                     logger.debug(b_val)
