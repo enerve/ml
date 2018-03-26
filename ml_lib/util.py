@@ -36,13 +36,13 @@ def prefix_init(args):
     pre_tym = str(int(round(time.time()) % 1000000))
     pre_outputdir = args.output_dir
 
-def prefix():
+def prefix(other_tym=None):
     return (pre_outputdir if pre_outputdir else '') + \
         ("%s_"%pre_dataset if pre_dataset else '') + \
         ("v%s_"%pre_validation_portion if pre_validation_portion else '') + \
         ("t%s_"%pre_test_portion if pre_test_portion else '') + \
         ("%s_"%pre_alg if pre_alg else '') + \
-        ("%s_"%pre_tym if pre_tym else '') + \
+        ("%s_"%(other_tym or pre_tym)) + \
         ("%s_"%pre_norm if pre_norm else '')
 
 
