@@ -1,7 +1,7 @@
 '''
 Created on Jan 26, 2018
 
-@author: erw
+@author: enerve
 '''
 from __future__ import division
 
@@ -57,7 +57,7 @@ class Perceptron(object):
                 # just pick one randomly from M
                 M = [M[random.randint(0, len(M)-1)]]
 
-            grad = - np.sum((Yt[M] * Xt[M].T), axis=1) / len(M)
+            grad = -1 * np.sum((Yt[M] * Xt[M].T), axis=1) / len(M)
 
             if self.reg_constant > 0:
                 grad += self.reg_constant * w
@@ -109,8 +109,8 @@ class Perceptron(object):
         for i, y in enumerate(Yt):
             c_matrix[y, class_prediction[i]] += 1
         
-        print "Accuracy: %f%%" % (100 * (c_matrix[0, 0] + c_matrix[1, 1]) 
-                                  / np.sum(c_matrix))
+#         print "Accuracy: %f%%" % (100 * (c_matrix[0, 0] + c_matrix[1, 1]) 
+#                                   / np.sum(c_matrix))
         return c_matrix
     
     def predict(self, X_test):

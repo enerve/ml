@@ -1,13 +1,17 @@
 '''
-@author erwin
+@author enerve
 
 '''
 from __future__ import division
-
+import logging
+import math
 import numpy as np
-import ml_lib.util as util
-import argparse
 
+import ml_lib.util as util
+import ml_lib.data_util as data_util
+import ml_lib.helper as helper
+import ml_lib.cmd_line as cmd_line
+import ml_lib.log as log
 
 # Draw histograms for each column
 def draw_classes_histogram(X, Y):
@@ -23,48 +27,33 @@ def features_to_use():
             feature_idx.append(10*k + 2 + j)
     return feature_idx
 
-
-
-if __name__ == '__main__':
+def main():
+    args = cmd_line.parse_args()
     
-    parser = argparse.ArgumentParser()
-    parser.add_argument('file', help='path to wdbc file')
-    parser.add_argument('--output_dir', help='path to store output files')
-    parser.add_argument('--test_portion',
-                        help='Which portion to use as test set',
-                        default=1, type=int)
-    parser.add_argument('--draw_classes_data', action='store_true')
-    parser.add_argument('--draw_classes_histogram', action='store_true')
-    parser.add_argument('--normalize', action='store_true')
-    parser.add_argument('--bayes', action='store_true')
-    parser.add_argument('--naive', action='store_true')
-    parser.add_argument('--perceptron', action='store_true')
-    parser.add_argument('--sklearn_perceptron', action='store_true')
-    parser.add_argument('--stochastic', action='store_true')
-    parser.add_argument('--logistic', action='store_true')
-    parser.add_argument('--knn', action='store_true')
-    args = parser.parse_args()
-    
-    print "--- WDBC dataset ---"
+    util.prefix_init(args)
     util.pre_dataset = "wdbc"
+
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    log.configure_logger(logger, util.pre_dataset)
+
+    logger.info("--- WDBC dataset ---")
 
     data = np.genfromtxt(args.file, delimiter=",",
                          converters={1: lambda x: 1.0 if x=='M' else 0.0})
     Y = data[:, 1].astype(int)
     X = data[:, features_to_use()]
 
-    X, Y, X_test, Y_test = util.split_into_train_test_sets(X, Y,
-                                                           args.test_portion)
+    X, Y, X_valid, Y_valid, X_test, Y_test = \
+        data_util.split_into_train_test_sets(X, Y, args.validation_portion,
+                                             args.test_portion)
     
-    print X.shape, X_test.shape
-
-    util.pre_outputdir = args.output_dir
+    logger.debug("%s %s", X.shape, X_test.shape)
 
     if args.normalize:
-        print "Normalizing..."
+        logger.info("Normalizing...")
         util.pre_norm = "n"
-        X, f_range, f_mean = util.normalize(X)
-        X_test = util.normalize(X_test, f_range, f_mean)[0]
+        X, X_valid, X_test = data_util.normalize_all(X, X_valid, X_test)
     
     if args.draw_classes_histogram:
         draw_classes_histogram(X, Y)
@@ -73,7 +62,7 @@ if __name__ == '__main__':
         util.draw_classes_data(X, Y, 5, 6)
 
     if args.bayes:
-        print "Bayes classifier..."
+        logger.info("Bayes classifier...")
         util.pre_alg = "bayes"
         from ml_lib.gaussian_plugin_classifier import GaussianPlugInClassifier 
         # Gaussian plug-in classifier
@@ -86,7 +75,7 @@ if __name__ == '__main__':
         # util.draw_classes_pdf(X, Y, gpi_classifier, [0.5, 0.5], 3)
     
     if args.naive:
-        print "Naive Bayes classifier..."
+        logger.info("Naive Bayes classifier...")
         util.pre_alg = "naive"
         from ml_lib.gaussian_naive_classifier import GaussianNaiveClassifier
         # Gaussian naive classifier
@@ -98,60 +87,41 @@ if __name__ == '__main__':
         util.draw_ROC_curve(X_test, Y_test, gn_classifier)
 
     if args.sklearn_perceptron:
-        print "Scikit-learn Perceptron..."
+        logger.info("Scikit-learn Perceptron...")
         util.pre_alg = "scikitperceptron"
         from sklearn.linear_model import Perceptron
         perceptron = Perceptron(tol=None, max_iter=300000)
         perceptron.fit(X, Y)
-        print "Mean accuracy: %s%%" %(100 * perceptron.score(X, Y))
+        logger.info("Mean accuracy: %s%%", 100 * perceptron.score(X, Y))
 
     if args.perceptron:
-        print "Perceptron..."
+        logger.info("Perceptron...")
         util.pre_alg = "perceptron"
         from ml_lib.perceptron import Perceptron
-#         perceptron = Perceptron(X, Y, args.stochastic, 1, 300000, 0)
-#         print perceptron.classify(X, Y)
-#         print perceptron.classify(X_test, Y_test)
 
-#     if args.perceptron:
-#         print "Multiclass Perceptron..."
-#         from ml_lib.perceptron import Perceptron
-#         
-        Ya = Y
-        Ya_test = Y_test
         split_points = [-1, 0]
         n = len(split_points)
         
-        def create_classifier(X, Y):
-            perceptron = Perceptron(X, Y, args.stochastic,
-                                    1, 30000, 0)
-            return perceptron
+        helper.classify_one_vs_one([],
+            X, Y, X_test, Y_test, n,
+            lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 30000, 0))
             
-        util.linear_multiclassify(X, Ya, X_test, Ya_test,
-                                  split_points, create_classifier)
-            
-
     if args.logistic:
-        print "Logistic Regression..."
+        logger.info("Logistic Regression...")
         util.pre_alg = "logistic"
         from ml_lib.logistic import Logistic
         
-        
-        Ya = Y
-        Ya_test = Y_test
         split_points = [-1, 0]
         n = len(split_points)
 
-        def create_classifier(X, Y):
-            logistic = Logistic(X, Y, step_size=0.001, max_steps=15000,
-                                reg_constant=1)
-            return logistic
+        helper.classify_one_vs_one([],
+            X, Y, X_test, Y_test, n,
+            lambda X, Y: Logistic(X, Y, step_size=0.001, max_steps=15000,
+                                  reg_constant=1))
         
-        util.linear_multiclassify(X, Ya, X_test, Ya_test,
-                                  split_points, create_classifier)
 
     if args.knn:
-        print "k-Nearest Neighbor..."
+        logger.info("k-Nearest Neighbor...")
         util.pre_alg = "knn"
         from ml_lib.knn import KNN
         
@@ -159,10 +129,83 @@ if __name__ == '__main__':
         p_range = 6 # / 2.0
         a_matrix = np.zeros((k_range, p_range))
         for k in range(k_range):
-            print "%s-NN" % (k+1)
+            logger.info("%s-NN", k+1)
             for p in range(p_range):
                 knn_classifier = KNN(X, Y, 1+k, dist_p=(p+1)/2.0)
                 a_matrix[k, p] = util.get_accuracy(
                     knn_classifier.classify(X_test, Y_test))
 
-        print a_matrix
+        logger.info("%s", a_matrix)
+
+    if args.svm:
+        logger.info("Support Vector Machine...")
+        util.pre_alg = "svm"
+        from ml_lib.svm import SVM, RBFKernel
+        
+        single_svm_test = False
+        if single_svm_test:
+            cm = SVM(X, Y, lam=None).classify(X_test, Y_test)
+            util.report_accuracy(cm)
+
+        single_svm_rbf_test = False
+        if single_svm_rbf_test:
+            svm = SVM(X, Y, lam=100, kernel=RBFKernel(0.3))
+            cm = svm.classify(X_test, Y_test)
+            util.report_accuracy(cm)
+
+        linear_svm_validation = False
+        if linear_svm_validation:
+            #lam_val = [math.pow(1.2, p) for p in range(-10,20)]
+            lam_val = [p/2 for p in range(1,200)]
+    
+            acc = np.zeros(len(lam_val))
+            for i, lam in enumerate(lam_val):
+                svm_classifier = SVM(X, Y, lam)#), kernel=RBFKernel(1))
+                #util.report_accuracy(svm_classifier.classify(X, Y))
+                cm = svm_classifier.classify(X_valid, Y_valid)
+                util.report_accuracy(cm)
+                acc[i] = util.get_accuracy(cm)
+    
+            logger.info("\nAccuracies found for lambda:")
+            for i, lam in enumerate(lam_val):
+                logger.info("%f: \t%f", lam, acc[i])
+            util.plot_accuracy(acc, lam_val)
+
+        rbf_svm_validation = False
+        if rbf_svm_validation:
+            for reps in range(2):
+                pre_svm_cv_x = "b" if reps == 0 else "l"
+                
+                if pre_svm_cv_x == "b":
+                    lam_val = [math.pow(1.5, p+1)*10 for p in range(7)]
+                    b_val = [(p+1)/20 for p in range(27)]
+                elif pre_svm_cv_x == "l":
+                    lam_val = [math.pow(1.2, p+1)*10 for p in range(27)]
+                    b_val = [(p+1)/10 for p in range(7)]
+                logger.debug(lam_val)
+                logger.debug(b_val)
+    
+                # Use a single instance so K matrix can be shared better
+                single_svm = SVM(X)
+                lmbd_classifier = lambda X, Y, b, lam, svm=single_svm: \
+                    svm.initialize(Y, lam, RBFKernel(b))
+
+                cm, acc_2d_list = helper.classify([b_val, lam_val], X, Y,
+                                                  X_valid,  Y_valid,
+                                                  lmbd_classifier)
+
+                acc_matrix = np.array(acc_2d_list)
+                logger.info("%s", acc_matrix)
+                
+                suff = "val_%s"%(pre_svm_cv_x)
+                np.savetxt(util.prefix() + suff + ".csv",
+                           acc_matrix, delimiter=",", fmt='%.3f')
+                if pre_svm_cv_x == 'b':
+                    util.plot_accuracies(acc_matrix.T, b_val, "RBF width b",
+                                         lam_val, "Lambda (C)", suff)
+                elif pre_svm_cv_x == 'l':
+                    util.plot_accuracies(acc_matrix, lam_val,  "Lambda (C)",
+                                         b_val, "RBF width b", suff)
+
+if __name__ == '__main__':
+    main()

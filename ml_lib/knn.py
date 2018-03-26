@@ -11,7 +11,6 @@ class KNN(object):
     k-Nearest Neighbor algorithm for classification
     '''
 
-
     def __init__(self, X, Y, k, num_classes=2, dist_p=2):
         '''
         Constructor

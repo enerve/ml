@@ -1,109 +1,50 @@
 '''
 Created on Jan 25, 2018
 
-@author: erw
+Utility methods to deal with results, display on screen, in figures or 
+output to files
+
+@author: enerve
 '''
 from __future__ import division
-
-import numpy as np
-import matplotlib.pyplot as plt
-import time
 import heapq as hq
+import logging
+import numpy as np
+import time
+
+import matplotlib.pyplot as plt
 
 
-# ------ Algorithm helpers ---------
+logger = logging.getLogger(__name__)
 
-
-def select_features(X, feature_ids):
-    X_selected = np.zeros((X.shape[0], 1))
-    for col in feature_ids:
-        X_selected = np.append(X_selected, X[:, col:(col+1)], axis=1)
-    return X_selected[:, 1:]
-
-def append_feature(V, X):
-    return np.append(X, np.reshape(V, (V.shape[0], 1)), axis=1)
-
-def normalize(X, f_range=None, f_mean=None):
-    if f_range is None:
-        f_range = np.max(X, axis=0) - np.min(X, axis=0)
-    X = X / f_range
-#     print (f_range * 100).astype(int)
-    if f_mean is None:
-        f_mean = np.mean(X)
-    X -= f_mean
-    return X, f_range, f_mean
-
-def linear_multiclassify(X, Ya, X_test, Ya_test, split_points,
-                         create_classifier):
-    n = len(split_points)
-    print "Running linear multiclassifier on %s splits" %(n)
-    print split_points
-    
-    Yp = np.zeros((Ya_test.shape[0], n))
-    for i, spl in enumerate(split_points):
-        if spl==-1: continue
-        print "Splitting at %s" % (spl)
-        Yb = np.zeros((Ya.shape[0]))
-        Yb[Ya>=i] = 1
-        classifier = create_classifier(X, Yb)
-        print classifier.classify(X, Yb)
-
-        Yp_i = classifier.predict(X_test)
-        Yp[:, i] = Yp_i
-        
-        ### rmoeve?
-        classifier.plot_likelihood_train(False, str(i))
-        Yb_test = np.zeros(Ya_test.shape[0])
-        Yb_test[Ya_test>=i] = 1
-        classifier.plot_likelihood_test(X_test, Yb_test, True, str(i))
-        
-        
-    Yp[:, 0] = 1    #it's gotta be positive by definition.
-
-    for i in range(n-1):
-        Yp[:, i] *= Yp[:, i+1]
-    Yp[:, n-1] = - Yp[:, n-1] # pretend n+1 col wudve been negative
-
-    Yguess = np.argmin(Yp, axis=1)
-    
-    c_matrix = np.zeros((n, n))
-    for i in range(n):
-        for j in range(n):
-            c_matrix[i, j] = np.sum(
-                np.logical_and((Yguess == j), (Ya_test == i)))
-    print 'Overall test acc: %f%%' % get_accuracy(c_matrix)
-    print c_matrix
+def init_logger():
+    #logger.setLevel(logging.INFO)
+    pass
 
 # ------ Drawing ---------
 
 pre_outputdir = None
 pre_dataset = None
-pre_portion = None
+pre_test_portion = None
+pre_validation_portion = None
 pre_alg = None
 pre_norm = None
+pre_tym = None
 
-def prefix():
+def prefix_init(args):
+    global pre_tym, pre_outputdir
+    pre_tym = str(int(round(time.time()) % 1000000))
+    pre_outputdir = args.output_dir
+
+def prefix(other_tym=None):
     return (pre_outputdir if pre_outputdir else '') + \
         ("%s_"%pre_dataset if pre_dataset else '') + \
-        ("%s_"%pre_portion if pre_portion else '') + \
+        ("v%s_"%pre_validation_portion if pre_validation_portion else '') + \
+        ("t%s_"%pre_test_portion if pre_test_portion else '') + \
         ("%s_"%pre_alg if pre_alg else '') + \
+        ("%s_"%(other_tym or pre_tym)) + \
         ("%s_"%pre_norm if pre_norm else '')
 
-def split_into_train_test_sets(X, Y, test_portion):
-    # Split into Training and Testing sets    
-    pre_portion = test_portion
-    train_idx=[]
-    test_idx=[]
-    for i in range(X.shape[0]):
-        if i % 4 == test_portion:
-            test_idx.append(i)
-        else:
-            train_idx.append(i)
-    X_test = X[test_idx]
-    Y_test = Y[test_idx]
-    X = X[train_idx]
-    Y = Y[train_idx]
-    return (X, Y, X_test, Y_test)
 
 def draw_class_histograms(X, Y, num_classes, col):
     for c in range(num_classes):
@@ -126,7 +67,7 @@ def draw_classes_pdf(X, Y, classifier, threshold, col):
 
     t = A[0,0] / (A[0, 0] + A[0, 1])    # true negatives
     f = A[1,0] / (A[1, 0] + A[1, 1])    # false negatives
-    print('True negatives: %s \t False negatives: %s \t' % (t, f))
+    logger.debug('True negatives: %s \t False negatives: %s \t', t, f)
     
 # draw ROC curve
 # true negative vs false negative
@@ -171,7 +112,7 @@ def draw_ROC_curve(X_test, Y_test, classifier):
         fn.append(f)
     
     elapsed_time = time.time() - start_time
-    print 'Avg time: %s' %(elapsed_time / measurements) #0.0409 ... 0.0038
+    logger.debug('Avg time: %s', elapsed_time / measurements)
     
     plt.plot(fn, tn, 'r-')
     plt.xlabel('false negatives')
@@ -211,17 +152,60 @@ def draw_classes_data(X, Y, colA, colB):
     plt.show()
     return plt
 
+def save_plot(pref=None):
+    fname = prefix() \
+        + ("%s_"%pref if pref else '') \
+        + 'val.png'
+    plt.savefig(fname, bbox_inches='tight')
+    logger.debug(fname)
+
+def hist(x, x_label, bins=100, pref=None):
+    logger.debug("%s: %s", x_label, x.shape[0])
+    plt.hist(x, bins)
+    plt.xlabel(x_label)
+    save_plot(pref)
+    plt.show()
+
+def plot(x, y, x_label, y_label, pref=None):
+    plt.plot(x, y, 'b-')
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    save_plot(pref)
+#     plt.show()
+    plt.clf() # clear figure
+
+def plot_accuracy(acc, x_values, line_labels=None, pref=None):
+    plot(x_values, acc, 'C or lambda', 'Validation accuracy', pref)
+
+def plot_accuracies(acc_matrix, x_values, x_label, z_labels=None,
+                    z_title = None, pref=None):
+    for i, acc in enumerate(acc_matrix):
+        plt.plot(x_values, acc, '-', label="%0.2f" %(z_labels[i]))
+
+    plt.xlabel(x_label)
+    plt.ylabel('Validation accuracy')
+    plt.legend(loc=4, title=z_title)
+    save_plot(pref)
+#     plt.show()
+    plt.clf() # clear figure
 
 # ------ Logging/Debugging ---------
 
 def report_accuracy(c_matrix, display_matrix=True):
-    print "Accuracy: %s%%" % get_accuracy(c_matrix)
+    logger.info("Accuracy: %s%%", get_accuracy(c_matrix))
     if display_matrix:
         for c in c_matrix:
-            print "\t", c
+            logger.info("\t%s", c)
     
 def get_accuracy(c_matrix):
     correct = sum([c_matrix[i, i] for i in range(len(c_matrix[0]))])
     
     return 100 * (correct / np.sum(c_matrix))
     
+def confusion_matrix(Y_actual, Y_guess, n):
+    c_matrix = np.zeros((n, n))
+    for i in range(n):
+        for j in range(n):
+            c_matrix[i, j] = np.sum(
+                np.logical_and((Y_actual == i), (Y_guess == j)))
+    return c_matrix

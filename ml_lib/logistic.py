@@ -1,13 +1,15 @@
 '''
 Created on Feb 20, 2018
 
-@author: erw
+@author: enerve
 '''
 from __future__ import division
-
+import logging
 import numpy as np
+
 import matplotlib.pyplot as plt
-import util
+
+import ml_lib.util as util
 
 def sigmoid(A):
     e = np.exp(-A)
@@ -26,6 +28,9 @@ class Logistic(object):
         max_steps is the maximum number of iterations to use
         reg_constant is the regularization multiplier to be used.
         """
+        self.logger = logging.getLogger(__name__)
+        #self.logger.setLevel(logging.INFO)
+
         self.X = X
         self.Y = Y
         self.step_size = step_size
@@ -47,7 +52,6 @@ class Logistic(object):
         
 #         lw = [[] for k in range(len(w))]
         for iter in range(self.max_steps):
-#             print w
             P = sigmoid(Yt * np.dot(Xt, w))
             grad = np.sum(Yt * (1-P) * Xt.T, axis=1) - self.reg_constant * w
             eta = self.step_size# * 10000 / (10000 + iter)
@@ -61,9 +65,10 @@ class Logistic(object):
 #                     lw[k].append(w[k])
             
                 if iter % 10000 == 0:
-                    print "Iter %s:\t" %(iter), w[0], w[1], w[2]
-        
-        print "Iterations: %s" %(iter)
+                    self.logger.debug("Iter %s:\t%s %s %s", iter, w[0],
+                                      w[1], w[2])
+
+        self.logger.debug("Iterations: %s", iter)
 
     
 
@@ -137,34 +142,6 @@ class Logistic(object):
             plt.savefig(fname, bbox_inches='tight')
             plt.show()
 
-    def classify(self, X_test, Y_test):
-        """ Classify the given test set using this logistic classifier.
-            Returns confusion matrix of test result accuracy.
-        """
-        if self.w is None: self.learn()
-        
-        c_matrix = np.asarray([[0, 0],[0,0]])
-
-        Xt = np.append(np.ones((X_test.shape[0], 1)), X_test, axis=1)
-        Yt = Y_test
-        
-        class_prediction = np.sign(np.dot(Xt, self.w))
-        class_prediction = ((class_prediction + 1) / 2).astype(int)
-        
-        for i, y in enumerate(Yt):
-            c_matrix[y, class_prediction[i]] += 1
-        
-        print "Accuracy: %f%%" % (100 * (c_matrix[0, 0] + c_matrix[1, 1]) 
-                                  / np.sum(c_matrix))
-        
-        return c_matrix
-    
-    def prefix(self):
-        return util.prefix() +\
-            "a%s_"%self.step_size + \
-            "r%s_"%self.reg_constant + \
-            "s%s_"%self.max_steps
-
     def predict(self, X_test):
         """ Predict class for the given data, and return for each, a quantity 
             that is positive if class is 1 and that is proportional to the
@@ -174,3 +151,22 @@ class Logistic(object):
         
         Xt = np.append(np.ones((X_test.shape[0], 1)), X_test, axis=1)
         return np.dot(Xt, self.w)
+
+    def classify(self, X_test, Y_test):
+        """ Classify the given test set using this logistic classifier.
+            Returns confusion matrix of test result accuracy.
+        """
+        class_prediction = np.sign(self.predict(X_test))
+        class_prediction = ((class_prediction + 1) / 2).astype(int)
+        
+        c_matrix = util.confusion_matrix(Y_test, class_prediction, 2)
+        util.report_accuracy(c_matrix, False)
+        
+        return c_matrix
+    
+    def prefix(self):
+        return util.prefix() +\
+            "a%s_"%self.step_size + \
+            "r%s_"%self.reg_constant + \
+            "s%s_"%self.max_steps
+
