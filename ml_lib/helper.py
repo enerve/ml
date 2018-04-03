@@ -104,20 +104,21 @@ def class_validation_helper_two_var(var1_list, var2_list, X, Y, X_val, Y_val,
 
 def classifier_helper_for(var_lists, X, Y, X_val, Y_val, num_classes,
                           create_classifier):
+    # TODO: remove "num_classes"
     if len(var_lists) == 0:
-        classifier_helper = lambda X, Y, X_val, Y_val, info: \
-                classifier_helper(X, Y, X_val, Y_val, create_classifier)
+        c_helper = lambda X, Y, X_val, Y_val, info: \
+            classifier_helper(X, Y, X_val, Y_val, create_classifier)
     elif len(var_lists) == 1:
-        classifier_helper = lambda X, Y, X_val, Y_val, info: \
-                class_validation_helper_one_var(
-                    var_lists[0], X, Y, X_val, Y_val, create_classifier)
+        c_helper = lambda X, Y, X_val, Y_val, info: \
+            class_validation_helper_one_var(
+                var_lists[0], X, Y, X_val, Y_val, create_classifier)
     elif len(var_lists) == 2:
-        classifier_helper = \
+        c_helper = \
             lambda X, Y, X_val, Y_val, info: \
                 class_validation_helper_two_var(
                     var_lists[0], var_lists[1], X, Y, X_val, Y_val,
                     create_classifier)
-    return classifier_helper
+    return c_helper
 
 def classify(var_lists, X, Y, X_val, Y_val, create_classifier):
 
@@ -142,15 +143,15 @@ def classify_class(X, Y, X_val, Y_val, class_validation_helper):
 
 def classify_one_vs_all(var_lists, X, Y, X_val, Y_val, num_classes,
                         create_classifier):
-    classifier_helper = classifier_helper_for( \
+    c_helper = classifier_helper_for( \
         var_lists, X, Y, X_val, Y_val, num_classes,
                         create_classifier)
 
     return one_vs_all_multiclassify(X, Y, X_val, Y_val, num_classes,
-                                    classifier_helper)
+                                    c_helper)
 
 def one_vs_all_multiclassify(X, Y, X_val, Y_val, num_classes,
-                             classifier_helper):
+                             c_helper):
     logging.info("Running one vs all multiclassifier " + \
                  "validation on %d classes -----", num_classes)
     
@@ -163,9 +164,7 @@ def one_vs_all_multiclassify(X, Y, X_val, Y_val, num_classes,
         Yb_val = np.zeros((Y_val.shape[0]))
         Yb_val[Y_val==i] = 1
         
-        classifier, acc_v, acc_list_v = classifier_helper(X, Yb, 
-                                                          X_val, Yb_val,
-                                                          (i,))
+        classifier, acc_v, acc_list_v = c_helper(X, Yb, X_val, Yb_val, (i,))
         acc_list.append(acc_list_v)
 
         logging.debug("")
@@ -202,15 +201,15 @@ def one_vs_one_partition(X, Y, i, j):
 
 def classify_one_vs_one(var_lists, X, Y, X_val, Y_val, num_classes,
                         create_classifier):
-    classifier_helper = classifier_helper_for( \
-        var_lists, X, Y, X_val, Y_val, num_classes,
+    c_helper = classifier_helper_for( \
+                        var_lists, X, Y, X_val, Y_val, num_classes,
                         create_classifier)
 
     return one_vs_one_multiclassify(X, Y, X_val, Y_val, num_classes,
-                                    classifier_helper)
+                                    c_helper)
 
 def one_vs_one_multiclassify(X, Y, X_val, Y_val, num_classes,
-                             classifier_helper):
+                             c_helper):
     logging.info("Running one vs one multiclassifier " + \
                  "on %d classes -----", num_classes)
     
@@ -223,7 +222,7 @@ def one_vs_one_multiclassify(X, Y, X_val, Y_val, num_classes,
             Xa, Yb = one_vs_one_partition(X, Y, i, j)
             Xa_val, Yb_val = one_vs_one_partition(X_val, Y_val, i, j)
 
-            classifier, acc_v, acc_list_v = classifier_helper(Xa, Yb,
+            classifier, acc_v, acc_list_v = c_helper(Xa, Yb,
                                                               Xa_val, Yb_val,
                                                               (i, j))
             acc_list.append(acc_list_v)

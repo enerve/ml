@@ -164,14 +164,14 @@ def hist(x, x_label, bins=100, pref=None):
     plt.hist(x, bins)
     plt.xlabel(x_label)
     save_plot(pref)
-    plt.show()
+    #plt.show()
 
 def plot(x, y, x_label, y_label, pref=None):
     plt.plot(x, y, 'b-')
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     save_plot(pref)
-#     plt.show()
+    #plt.show()
     plt.clf() # clear figure
 
 def plot_accuracy(acc, x_values, line_labels=None, pref=None):

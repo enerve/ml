@@ -73,6 +73,7 @@ class SVM(object):
         if kernel != self.kernel:
             self.K = None
             self.kernel = kernel
+            self.logger.debug("Using kernel: %s" % kernel)
         
         return self
 
@@ -138,6 +139,9 @@ class SVM(object):
         logging.debug("  alpha nonzero = %d/%d", np.sum(nz_al), n)
         if self.lam:
             logging.debug("     mu nonzero = %d/%d", np.sum(nz_mu), n)
+        if numdiff > 0:
+            logging.debug(self.alpha)
+            logging.debug(self.kernel)
         
 
     def predict(self, X_test):
