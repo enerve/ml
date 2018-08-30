@@ -19,17 +19,21 @@ def init_logger():
     pass
 
 def select_features(X, feature_ids):
-    X_selected = np.zeros((X.shape[0], 1))
-    for col in feature_ids:
-        X_selected = np.append(X_selected, X[:, col:(col+1)], axis=1)
-    return X_selected[:, 1:]
+    return X[:, feature_ids]
+    
+#     X_selected = np.zeros((X.shape[0], 1))
+#     for col in feature_ids:
+#         X_selected = np.append(X_selected, X[:, col:(col+1)], axis=1)
+#     return X_selected[:, 1:]
 
 def append_feature(V, X):
+    logger.info("Adding feature!")
     return np.append(X, np.reshape(V, (V.shape[0], 1)), axis=1)
 
 def normalize(X, f_range=None, f_mean=None):
     if f_range is None:
         f_range = np.max(X, axis=0) - np.min(X, axis=0)
+        f_range[f_range == 0.0] = 1.0  # fixed range for columns with 0 range
     X = X / f_range
     if f_mean is None:
         f_mean = np.mean(X)
@@ -51,7 +55,7 @@ def split_into_train_test_sets(X, Y, validation_portion, test_portion):
     test_idx=[]
     valid_idx=[]
     for i in range(X.shape[0]):
-        if i % 4 == test_portion:
+        if (test_portion is not None) and i % 4 == test_portion:
             test_idx.append(i)
         elif (validation_portion is not None) and i % 4 == validation_portion:
             valid_idx.append(i)
@@ -64,7 +68,9 @@ def split_into_train_test_sets(X, Y, validation_portion, test_portion):
     X = X[train_idx]
     Y = Y[train_idx]
     return (X, Y, X_valid, Y_valid, X_test, Y_test)
+    
 
+# Split range into classes
 def bucketify(Y, Y_valid, Y_test, split_points):
     logger.debug("Classes (%s) split at:", len(split_points))
     logger.debug("%s", split_points[1:])
@@ -83,19 +89,16 @@ def bucketify(Y, Y_valid, Y_test, split_points):
         
     return (Ya, Ya_valid, Ya_test)
 
-def describe_classes(Y, Y_valid, Y_test):
+def describe_classes(num_classes, Y, Y_valid, Y_test):
     logger.debug("Training set")
-    logger.debug("  Class 0: %d", np.sum(Y == 0))
-    logger.debug("  Class 1: %d", np.sum(Y == 1))
-    logger.debug("  Class 2: %d", np.sum(Y == 2))
+    for c in range(num_classes):
+        logger.debug("  Class %d: %d", (c, np.sum(Y == c)))
 
     logger.debug("Validation set")
-    logger.debug("  Class 0: %d", np.sum(Y_valid == 0))
-    logger.debug("  Class 1: %d", np.sum(Y_valid == 1))
-    logger.debug("  Class 2: %d", np.sum(Y_valid == 2))
+    for c in range(num_classes):
+        logger.debug("  Class %d: %d", (c, np.sum(Y_valid == c)))
 
     logger.debug("Test set")
-    logger.debug("  Class 0: %d", np.sum(Y_test == 0))
-    logger.debug("  Class 1: %d", np.sum(Y_test == 1))
-    logger.debug("  Class 2: %d", np.sum(Y_test == 2))
+    for c in range(num_classes):
+        logger.debug("  Class %d: %d", (c, np.sum(Y_test == c)))
 

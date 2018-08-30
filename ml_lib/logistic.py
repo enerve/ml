@@ -47,6 +47,7 @@ class Logistic(object):
         Yt = self.Y * 2 - 1
 
         w = np.ones(Xt.shape[1])    # avoiding random init, for debugging
+        self.stats_iter = []
         self.stats_lik = []
         self.stats_w = []
         
@@ -57,14 +58,15 @@ class Logistic(object):
             eta = self.step_size# * 10000 / (10000 + iter)
             w = w + grad * eta
             
-            if iter % 10 == 0:
+            if iter % 1 == 0:
                 likelihood = np.mean(np.log(P))
+                self.stats_iter.append(iter)
                 self.stats_lik.append(likelihood)
                 self.stats_w.append(w)
 #                 for k in range(len(w)):
 #                     lw[k].append(w[k])
             
-                if iter % 10000 == 0:
+                if iter % 1000 == 0:
                     self.logger.debug("Iter %s:\t%s %s %s", iter, w[0],
                                       w[1], w[2])
 
@@ -92,13 +94,17 @@ class Logistic(object):
         
     def plot_likelihood_train(self, show_plot=True, prefix=None):
         if self.w is None: self.learn()
+        
+        from matplotlib import rcParams
+        rcParams['font.family'] = 'sans-serif'
+        rcParams['font.sans-serif'] = ['Tahoma']
 
-        x_range = range(len(self.stats_lik))
+        x_range = self.stats_iter #range(len(self.stats_lik))
         plt.plot(x_range, self.stats_lik, 'b-')
         if show_plot:
             plt.xlabel("Iteration")
             plt.ylabel("Likelihood")
-            fname = self.prefix() + \
+            fname = self.prefix() \
                 + ("%s_"%prefix if prefix else '') \
                 + 'train.png'
             plt.savefig(fname, bbox_inches='tight')
@@ -107,7 +113,7 @@ class Logistic(object):
     def plot_likelihood_improvement_train(self):
         if self.w is None: self.learn()
 
-        x_range = range(len(self.stats_lik))
+        x_range = self.stats_iter #range(len(self.stats_lik))
 
         lik = self.stats_lik
         impr = (np.asarray(lik[1:]) - np.asarray(lik[0:-1])).tolist()

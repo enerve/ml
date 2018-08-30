@@ -29,7 +29,7 @@ class Perceptron(object):
         self.Y = Y
         self.is_stochastic = is_stochastic
         if is_stochastic:
-            print "Running Stochastic Perceptron..."
+            print("Running Stochastic Perceptron...")
         self.step_size = step_size
         self.max_steps = max_steps
         self.reg_constant = reg_constant
@@ -50,7 +50,7 @@ class Perceptron(object):
             M = np.where(P <= 0)[0]  # indices of misclassified datapoints
 
             if len(M) == 0: 
-                print "Found linearly separable hyperplane!"
+                print("Found linearly separable hyperplane!")
                 break
 
             if self.is_stochastic:
@@ -66,14 +66,14 @@ class Perceptron(object):
             
             w = w - grad * eta
             
-            if iter % 1 == 0:
+            if iter % 100 == 0:
                 for k in range(len(w)):
                     lw[k].append(w[k])
             
-                if iter % 10000 == 0:
-                    print "Iter %s:\t" %(iter), w[0], w[1], w[2]
+                if iter % 1000 == 0:
+                    print("Iter %s:\t %f %f %f" %(iter, w[0], w[1], w[2]))
         
-        print "Iterations: %s" %(iter)
+        print("Iterations: %s" %(iter))
 
 #         x_range = range(len(lw[0]))
 #         fig = plt.figure()
@@ -87,7 +87,7 @@ class Perceptron(object):
 #         plt.ylabel("Feature weight")
 #         plt.show()
         
-        print np.array2string(w, precision=2, separator=',')
+        print("%s" % np.array2string(w, precision=2, separator=','))
         
         self.w = w
     

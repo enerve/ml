@@ -18,6 +18,7 @@ def draw_classes_histogram(X, Y):
     X_0 = X[np.nonzero(1 - Y)] # All y=0 datapoints
     X_1 = X[np.nonzero(Y)] # All y=1 datapoints
     for col in range(10):
+        # TODO: fix
         util.draw_class_histograms(X_0, X_1, 2, col)
 
 def features_to_use():
@@ -99,11 +100,8 @@ def main():
         util.pre_alg = "perceptron"
         from ml_lib.perceptron import Perceptron
 
-        split_points = [-1, 0]
-        n = len(split_points)
-        
         helper.classify_one_vs_one([],
-            X, Y, X_test, Y_test, n,
+            X, Y, X_test, Y_test, 2,
             lambda X, Y: Perceptron(X, Y, args.stochastic, 1, 30000, 0))
             
     if args.logistic:
@@ -111,11 +109,8 @@ def main():
         util.pre_alg = "logistic"
         from ml_lib.logistic import Logistic
         
-        split_points = [-1, 0]
-        n = len(split_points)
-
         helper.classify_one_vs_one([],
-            X, Y, X_test, Y_test, n,
+            X, Y, X_test, Y_test, 2,
             lambda X, Y: Logistic(X, Y, step_size=0.001, max_steps=15000,
                                   reg_constant=1))
         

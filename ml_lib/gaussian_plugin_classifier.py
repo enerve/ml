@@ -6,8 +6,9 @@ Created on Jan 26, 2018
 
 from __future__ import division
 
-import numpy as np
+import logging
 import math
+import numpy as np
 
 class GaussianPlugInClassifier(object):
     
@@ -15,7 +16,8 @@ class GaussianPlugInClassifier(object):
         self.X = X
         self.Y = Y
         self.num_classes = num_classes
-    
+        self.logger = logging.getLogger(__name__)
+
     # Function that tests data classification for a gaussian plug-in classifier
     # and returns confusion matrix
     def classify(self, X_test, Y_test, class_weights=None):
@@ -40,10 +42,12 @@ class GaussianPlugInClassifier(object):
             # Compute sigma covariance matrix of the gaussian
             meanX_c = np.mean(X_c, axis=0)
             diffX_c = X_c - meanX_c
-            sX_c = (1.0 / num_c) * np.dot(diffX_c.T, diffX_c)
+            self.logger.debug("Bayes class %d diffX=%s", c, np.sum(diffX_c, axis=0))
+            sX_c = (1.0 / num_c) * np.dot(diffX_c.T, diffX_c) + 0.00001
 
+            self.logger.debug("Bayes class %d sigma=%s", c, sX_c)
             coeff_c = prior_c / math.sqrt(np.linalg.det(sX_c))
-            sX_inv_c = np.linalg.inv(sX_c)
+            sX_inv_c = np.linalg.pinv(sX_c)
 
             meanX.append(meanX_c) 
             coeff.append(coeff_c)
@@ -59,6 +63,7 @@ class GaussianPlugInClassifier(object):
     
         c_matrix = np.zeros((self.num_classes, self.num_classes))
 
+        # TODO: vectorize
         for i in range(X_test.shape[0]):
             y = int(Y_test[i])
             x = X_test[i]

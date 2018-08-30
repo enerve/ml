@@ -22,18 +22,39 @@ class LinearKernel:
         return np.dot(X1, X2.T)
 
 class RBFKernel:
-    def __init__(self, width):
+    def __init__(self, width, vectorize=True):
         self.width = width
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+        self.vectorize = vectorize
 
     def __str__(self):
         return "RBF kernel width %s" % self.width
 
     def compute(self, X1, X2):
         ''' Creates a RBF kernel matrix between rows of X1 and X2. '''
-        X1 = X1[:, np.newaxis, :]
-        X2 = X2[np.newaxis, :, :]
-        
-        D = np.sum(np.square(X1 - X2), axis=2)
+        self.logger.debug("RBF")
+
+        if self.vectorize:
+            X1 = X1[:, np.newaxis, :]
+            X2 = X2[np.newaxis, :, :]
+            
+            self.logger.debug("RBF: about to Square")
+            Q = np.square(X1 - X2)
+            self.logger.debug("RBF: Computed square difference")
+            D = np.sum(Q, axis=2)
+        else:
+            D = np.zeros(X1.shape[0], X2.shape[1])
+            i = 0
+            for x2 in X2:
+                Q_ = np.square(X1 - x2)
+                self.logger.debug("RBF: Computed square difference")
+                D_ = np.sum(Q, axis=1)
+                D[i] = D_
+                i += 1
+                
+            
+        self.logger.debug("RBF: Summed square difference")
         return np.exp(-1 * D / self.width)
     
     def __eq__(self, other):
@@ -54,7 +75,7 @@ class SVM(object):
             classification, or infinity for strict separating hyperplane
         """
         self.logger = logging.getLogger(__name__)
-        #self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging.DEBUG)
 
         self.X = X
         self.kernel = None
@@ -106,7 +127,9 @@ class SVM(object):
         
         self.logger.info("...Learning...")
         solvers.options['show_progress'] = False
+        self.logger.debug("About to solve qp!")
         sol = solvers.qp(P, q, G, h, A, b)
+        self.logger.debug("Solved qp...")
 
         self.alpha = np.reshape(np.array(sol['x']), (n))
         

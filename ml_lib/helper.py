@@ -195,7 +195,7 @@ def one_vs_one_partition(X, Y, i, j):
     n_ij = np.sum(id_ij)
     Xa = X[id_ij]
     Ya = Y[id_ij]
-    Yb = np.zeros(n_ij)
+    Yb = np.zeros(n_ij, dtype=np.int8)
     Yb[Ya==i] = 1
     return (Xa, Yb)
 
@@ -233,12 +233,13 @@ def one_vs_one_multiclassify(X, Y, X_val, Y_val, num_classes,
             logging.debug("")
             cm_b = classifier.classify(Xa_val, Yb_val)
             logging.debug("%s", cm_b)
+#             classifier.plot_likelihood_train(prefix="likelihood")
 
             # Record test prediction for later comparison
             Yp[:, i, j] = classifier.predict(X_val)
             Yp[:, j, i] = -Yp[:, i, j]
 
-            logger.debug("Yp: %s", Yp[:, i, j])
+            #logger.debug("Yp: %s", Yp[:, i, j])
 
     logging.info("============== DONE ALL ===============")
     logging.debug("")
@@ -254,3 +255,55 @@ def one_vs_one_multiclassify(X, Y, X_val, Y_val, num_classes,
     logging.debug(".......")
     
     return c_matrix, acc_list
+
+def spread(Y, num_classes):
+    Y_row = np.array(range(Y.shape[0]))
+    Y_ = np.zeros((Y.shape[0], num_classes), dtype=np.int8)
+    Y_[Y_row, Y] = 1
+    return Y_
+
+def babysit_nn(X, Y, X_val, Y_val, num_classes, hidden_layer_sizes,
+               learning_rate, reg_constant, num_iterations):
+    Y_spread = spread(Y, num_classes)
+    Y_val_spread = spread(Y_val, num_classes)
+
+    from ml_lib.n_net import NNet
+    nn = NNet(X, Y_spread, hidden_layer_sizes, 0, learning_rate, reg_constant)
+
+    ITERS_PER_RUN = 5
+
+    J = []      # output cost
+    J_r = []    # regularization cost
+    Sat_s = []  # %age saturated
+    TAcc_s = [] # traing accuracy
+    VAcc_s = []
+    It = []
+    for train_loops in range(num_iterations // ITERS_PER_RUN):
+        (it, error_cost, reg_cost, sat, tr_acc) = nn.train(ITERS_PER_RUN)
+        It.append(it)
+        J.append(error_cost)
+        J_r.append(reg_cost)
+        Sat_s.append(sat)
+        TAcc_s.append(tr_acc)
+        
+        val_acc = util.get_accuracy(
+            nn.classify(X_val, Y_val_spread, should_report=False))
+        VAcc_s.append(val_acc)
+        
+        logging.debug("Iteration %d. Cost=%0.2f \t Tr=%0.2f Val=%0.2f Sat=%0.2f",
+                      it, error_cost + reg_cost, tr_acc, val_acc, sat)
+
+    # Plot Cost function
+    util.plot_all(It,
+                  #[J], 
+                  #[J, J_r], 
+                  [J, Sat_s, TAcc_s, VAcc_s],
+                  #[TAcc_s, VAcc_s],
+                  "iteration", "",
+                  ["Cost", "Saturation", "Training", "Validation"],
+                  #["Training", "Validation"],
+                  nn.prefix())
+    
+
+    
+    

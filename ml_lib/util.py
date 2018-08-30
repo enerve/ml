@@ -174,6 +174,17 @@ def plot(x, y, x_label, y_label, pref=None):
     #plt.show()
     plt.clf() # clear figure
 
+def plot_all(x, ys, x_label, ys_label, labels=None, pref=None):
+    for i, y in enumerate(ys):
+        plt.plot(x, y, '-', label=labels[i] if labels is not None else '')
+    plt.xlabel(x_label)
+    plt.ylabel(ys_label)
+    if labels is not None:
+        plt.legend(loc=4)
+    save_plot(pref)
+    #plt.show()
+    plt.clf() # clear figure
+
 def plot_accuracy(acc, x_values, line_labels=None, pref=None):
     plot(x_values, acc, 'C or lambda', 'Validation accuracy', pref)
 

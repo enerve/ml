@@ -46,11 +46,12 @@ class GaussianNaiveClassifier(object):
                 
             prior.append(prior_c)
             meanX.append(meanX_c)
-            varX.append(varX_c)
+            varX.append(varX_c + 0.0000000001)
             pdensity.append([])
                 
         c_matrix = np.zeros((self.num_classes, self.num_classes))
         
+        # TODO: vectorize
         for i in range(X_test.shape[0]):
             x = X_test[i]
             y = int(Y_test[i])

@@ -18,12 +18,12 @@ def configure_logger(logger, name):
                     '_%s' % name + \
                     '_%s' % str(int(round(time.time()) % 10000000)) + \
                     '.log'
-    print "Logging to %s" % log_filename
+    print("Logging to %s" % log_filename)
     fh = logging.FileHandler(log_filename)
     fh.setLevel(logging.DEBUG)
     # create console handler with a higher log level
     ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.INFO)
+    ch.setLevel(logging.DEBUG)
     # create formatter and add it to the handlers
     formatter = logging.Formatter(
         '(%(name)s) %(levelname)s: %(message)s')

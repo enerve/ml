@@ -11,7 +11,7 @@ def parse_args():
     parser.add_argument('--output_dir', help='path to store output files')
     parser.add_argument('--test_portion',
                         help='Which portion to use as test set',
-                        default=1, type=int)
+                        default=0, type=int)
     parser.add_argument('--validation_portion',
                         help='Which portion to use as validation set',
                         default=2, type=int)
@@ -26,4 +26,5 @@ def parse_args():
     parser.add_argument('--logistic', action='store_true')
     parser.add_argument('--knn', action='store_true')
     parser.add_argument('--svm', action='store_true')
+    parser.add_argument('--nn', action='store_true')
     return parser.parse_args()
