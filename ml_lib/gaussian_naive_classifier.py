@@ -1,7 +1,7 @@
 '''
 Created on Jan 25, 2018
 
-@author: erw
+@author: enerve
 '''
 
 from __future__ import division

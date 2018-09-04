@@ -5,6 +5,7 @@ Created on Jan 26, 2018
 '''
 from __future__ import division
 
+import logging
 import numpy as np
 import random
 import matplotlib.pyplot as plt
@@ -25,11 +26,14 @@ class Perceptron(object):
         max_steps is the maximum number of iterations to use before giving up
         reg_constant is the regularization multiplier to be used.
         """
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+
         self.X = X
         self.Y = Y
         self.is_stochastic = is_stochastic
         if is_stochastic:
-            print("Running Stochastic Perceptron...")
+            self.logger.debug("Running Stochastic Perceptron...")
         self.step_size = step_size
         self.max_steps = max_steps
         self.reg_constant = reg_constant
@@ -50,7 +54,7 @@ class Perceptron(object):
             M = np.where(P <= 0)[0]  # indices of misclassified datapoints
 
             if len(M) == 0: 
-                print("Found linearly separable hyperplane!")
+                self.logger.debug("Found linearly separable hyperplane!")
                 break
 
             if self.is_stochastic:
@@ -71,9 +75,9 @@ class Perceptron(object):
                     lw[k].append(w[k])
             
                 if iter % 1000 == 0:
-                    print("Iter %s:\t %f %f %f" %(iter, w[0], w[1], w[2]))
+                    self.logger.debug("Iter %s:\t %f %f %f" %(iter, w[0], w[1], w[2]))
         
-        print("Iterations: %s" %(iter))
+        self.logger.debug("Iterations: %s" %(iter))
 
 #         x_range = range(len(lw[0]))
 #         fig = plt.figure()
@@ -87,7 +91,7 @@ class Perceptron(object):
 #         plt.ylabel("Feature weight")
 #         plt.show()
         
-        print("%s" % np.array2string(w, precision=2, separator=','))
+        #self.logger.debug("%s" % np.array2string(w, precision=2, separator=','))
         
         self.w = w
     
@@ -108,9 +112,6 @@ class Perceptron(object):
         
         for i, y in enumerate(Yt):
             c_matrix[y, class_prediction[i]] += 1
-        
-#         print "Accuracy: %f%%" % (100 * (c_matrix[0, 0] + c_matrix[1, 1]) 
-#                                   / np.sum(c_matrix))
         return c_matrix
     
     def predict(self, X_test):

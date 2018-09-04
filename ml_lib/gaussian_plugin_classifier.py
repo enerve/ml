@@ -1,7 +1,7 @@
 '''
 Created on Jan 26, 2018
 
-@author: erw
+@author: enerve
 '''
 
 from __future__ import division
@@ -42,8 +42,13 @@ class GaussianPlugInClassifier(object):
             # Compute sigma covariance matrix of the gaussian
             meanX_c = np.mean(X_c, axis=0)
             diffX_c = X_c - meanX_c
+            # TODO: remove?
+            diffX_c += np.random.randn(X_c.shape[0], X_c.shape[1]) * 1
+            self.logger.debug("diffX_c last col: %s", np.sum(diffX_c[:, -1]))
+            self.logger.debug("X_c last col: %s", np.sum(X_c[:, -1]))
+            
             self.logger.debug("Bayes class %d diffX=%s", c, np.sum(diffX_c, axis=0))
-            sX_c = (1.0 / num_c) * np.dot(diffX_c.T, diffX_c) + 0.00001
+            sX_c = (1.0 / num_c) * np.dot(diffX_c.T, diffX_c)# + 0.00001
 
             self.logger.debug("Bayes class %d sigma=%s", c, sX_c)
             coeff_c = prior_c / math.sqrt(np.linalg.det(sX_c))

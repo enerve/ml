@@ -182,7 +182,7 @@ def plot_all(x, ys, x_label, ys_label, labels=None, pref=None):
     if labels is not None:
         plt.legend(loc=4)
     save_plot(pref)
-    #plt.show()
+    plt.show()
     plt.clf() # clear figure
 
 def plot_accuracy(acc, x_values, line_labels=None, pref=None):
@@ -200,10 +200,26 @@ def plot_accuracies(acc_matrix, x_values, x_label, z_labels=None,
 #     plt.show()
     plt.clf() # clear figure
 
+def plot_validation_results(val_acc, xlabel, ylabel, pref=None):
+    x_scatter = [x[0] for x in val_acc]
+    y_scatter = [x[1] for x in val_acc]
+    marker_size = 100
+    
+    # plot validation accuracy
+    colors = [val_acc[x] for x in val_acc]
+    plt.subplot(2, 1, 2)
+    plt.scatter(x_scatter, y_scatter, marker_size, c=colors)
+    plt.colorbar()
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title('validation accuracy')
+    save_plot(pref)
+    plt.show()
+
 # ------ Logging/Debugging ---------
 
 def report_accuracy(c_matrix, display_matrix=True):
-    logger.info("Accuracy: %s%%", get_accuracy(c_matrix))
+    logger.info("Accuracy: %0.2f%%", get_accuracy(c_matrix))
     if display_matrix:
         for c in c_matrix:
             logger.info("\t%s", c)

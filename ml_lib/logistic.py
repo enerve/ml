@@ -46,7 +46,8 @@ class Logistic(object):
         Xt = np.append(np.ones((self.X.shape[0], 1)), self.X, axis=1)
         Yt = self.Y * 2 - 1
 
-        w = np.ones(Xt.shape[1])    # avoiding random init, for debugging
+        #w = np.random.randn(Xt.shape[1]) * 0.01 - 0.005
+        w = np.ones(Xt.shape[1])
         self.stats_iter = []
         self.stats_lik = []
         self.stats_w = []
@@ -55,10 +56,10 @@ class Logistic(object):
         for iter in range(self.max_steps):
             P = sigmoid(Yt * np.dot(Xt, w))
             grad = np.sum(Yt * (1-P) * Xt.T, axis=1) - self.reg_constant * w
-            eta = self.step_size# * 10000 / (10000 + iter)
+            eta = self.step_size# * 100 / (100 + iter)
             w = w + grad * eta
             
-            if iter % 1 == 0:
+            if iter % 10 == 0:
                 likelihood = np.mean(np.log(P))
                 self.stats_iter.append(iter)
                 self.stats_lik.append(likelihood)
@@ -66,7 +67,7 @@ class Logistic(object):
 #                 for k in range(len(w)):
 #                     lw[k].append(w[k])
             
-                if iter % 1000 == 0:
+                if iter % 100 == 0:
                     self.logger.debug("Iter %s:\t%s %s %s", iter, w[0],
                                       w[1], w[2])
 
@@ -99,7 +100,7 @@ class Logistic(object):
         rcParams['font.family'] = 'sans-serif'
         rcParams['font.sans-serif'] = ['Tahoma']
 
-        x_range = self.stats_iter #range(len(self.stats_lik))
+        x_range = self.stats_iter
         plt.plot(x_range, self.stats_lik, 'b-')
         if show_plot:
             plt.xlabel("Iteration")
@@ -108,12 +109,12 @@ class Logistic(object):
                 + ("%s_"%prefix if prefix else '') \
                 + 'train.png'
             plt.savefig(fname, bbox_inches='tight')
-            plt.show()
+            #plt.show()
 
     def plot_likelihood_improvement_train(self):
         if self.w is None: self.learn()
 
-        x_range = self.stats_iter #range(len(self.stats_lik))
+        x_range = self.stats_iter
 
         lik = self.stats_lik
         impr = (np.asarray(lik[1:]) - np.asarray(lik[0:-1])).tolist()
@@ -137,7 +138,7 @@ class Logistic(object):
             P = sigmoid(Yt * np.dot(Xt, w))
             lik.append(np.mean(np.log(P)))
         
-        x_range = range(len(lik))
+        x_range = self.stats_iter
         plt.plot(x_range, lik, 'r:')
         if show_plot:
             plt.xlabel("Iteration")

@@ -44,7 +44,7 @@ class RBFKernel:
             self.logger.debug("RBF: Computed square difference")
             D = np.sum(Q, axis=2)
         else:
-            D = np.zeros(X1.shape[0], X2.shape[1])
+            D = np.zeros(X1.shape[0], X2.shape[0])
             i = 0
             for x2 in X2:
                 Q_ = np.square(X1 - x2)
