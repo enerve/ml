@@ -40,15 +40,14 @@ class NNet():
         self.layer_sizes.extend(hidden_layer_sizes)
         self.layer_sizes.append(Y.shape[1])
         S = self.layer_sizes
-        L = len(S)
         assert X.shape[1] == S[0], \
             "First layer size should match #Features of input X"
         assert Y.shape[1] == S[-1], \
             "Last layer size should match #classes in output Y"
         
-        self.restart()
+        self.reset()
 
-    def restart(self):
+    def reset(self):
         # Initialize weights
         EPSILON = 0.01
         S = self.layer_sizes
@@ -61,7 +60,7 @@ class NNet():
         
         self.iteration = 0
 
-        self.logger.debug("Starting NNet with layers %s, Epsilon=%0.4f, " +
+        self.logger.debug("Initializing NNet with layers %s, Epsilon=%0.4f, " +
                           "LR=%0.2f, lam=%0.4f",
                           S, EPSILON, self.learning_rate, self.lam)
         
@@ -80,7 +79,6 @@ class NNet():
                         
             A_s = []
             # Forward propogation
-            #self.logger.debug("Iteration %d. Forward prop", iter)
             A = X.T
             for i in range(L-1):
                 A_ = np.append(np.ones((1, A.shape[1])), A, axis=0)
@@ -91,7 +89,6 @@ class NNet():
             if iter == num_iterations - 1:
                 # Cost
                 error_cost = - np.sum(Y.T * np.log(A) + 
-                                      #(1 - Y.T) * (np.log(1.0000001 - A))) / m
                                       (1 - Y.T) * (np.log(1 - A))) / m
                 reg_cost = 0
                 for i in range(L-1): # regularization
@@ -133,9 +130,6 @@ class NNet():
 
             # TODO: gradient checking
 
-        #self.thetas = Ts
-        #self.logger.debug("Thetas: %s", self.thetas)
-        
         self.stat_J_e = error_cost
         self.stat_J_r = reg_cost
         self.stat_perc_saturated = perc_saturated

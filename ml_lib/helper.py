@@ -210,8 +210,6 @@ def test_one_vs_all(X_test, Y_test, num_classes, classifier_list):
             Yp[:, i, j] = classifier.predict(Xa_test)
             Yp[:, j, i] = -Yp[:, i, j]
 
-            #logger.debug("Yp: %s", Yp[:, i, j])
-
     logging.info("============== DONE ALL ===============")
     logging.debug("")
 
@@ -224,6 +222,8 @@ def test_one_vs_all(X_test, Y_test, num_classes, classifier_list):
     logging.debug('%s', c_matrix)
     logging.debug(".......")
     
+    return c_matrix
+
 def one_vs_one_partition(X, Y, i, j):
     id_ij = np.logical_or(Y == i, Y == j)
     n_ij = np.sum(id_ij)
@@ -266,26 +266,18 @@ def one_vs_one_multiclassify(X, Y, X_val, Y_val, num_classes,
             logging.debug("")
             logging.info("=========== DONE classifying %s vs %s ============",
                          i, j)
-#             logging.debug("")
-#             logging.debug("Training accuracy: %0.2f", 
-#                           util.get_accuracy(classifier.classify(Xa, Yb)))
             logging.debug("")
             cm_b = classifier.classify(Xa_val, Yb_val)
             logging.debug("%s", cm_b)
-            #classifier.plot_likelihood_train(prefix="likelihood")
-            #classifier.plot_likelihood_test(Xa_val, Yb_val, prefix="likelihood")
 
             # Record test prediction for later comparison
             Yp[:, i, j] = classifier.predict(X_val)
             Yp[:, j, i] = -Yp[:, i, j]
 
-            #logger.debug("Yp: %s", Yp[:, i, j])
-
     logging.info("============== DONE ALL ===============")
     logging.debug("")
 
     Yp = np.sum(Yp, axis=2)
-    #logger.debug("Yp after sum: %s", Yp)
     Y_guess = np.argmax(Yp, axis=1)
 
     c_matrix = util.confusion_matrix(Y_val, Y_guess, num_classes)
@@ -314,8 +306,6 @@ def test_one_vs_one(X_test, Y_test, num_classes, classifier_list):
             Yp[:, i, j] = classifier.predict(Xa_test)
             Yp[:, j, i] = -Yp[:, i, j]
 
-            #logger.debug("Yp: %s", Yp[:, i, j])
-
     logging.info("============== DONE ALL ===============")
     logging.debug("")
 
@@ -328,15 +318,22 @@ def test_one_vs_one(X_test, Y_test, num_classes, classifier_list):
     logging.debug('%s', c_matrix)
     logging.debug(".......")
     
+    return c_matrix
 
 def spread(Y, num_classes):
+    ''' Takes an 1D array of N rows containing labels 0..(K-1) and 
+        returns a 2D array of size N x K where the kth column is set to 1 if
+        label is k, and 0 otherwise.
+    '''
     Y_row = np.array(range(Y.shape[0]))
     Y_ = np.zeros((Y.shape[0], num_classes), dtype=np.int8)
     Y_[Y_row, Y] = 1
     return Y_
 
 def train_nn(X, Y, X_val, Y_val, num_classes, hidden_layer_sizes,
-               learning_rate, reg_constant, num_iterations, should_plot=False):
+             learning_rate, reg_constant, num_iterations, should_plot=False):
+    logging.info("Running NN training on %d classes -----", num_classes)
+
     Y_spread = spread(Y, num_classes)
     Y_val_spread = spread(Y_val, num_classes)
 
@@ -369,7 +366,6 @@ def train_nn(X, Y, X_val, Y_val, num_classes, hidden_layer_sizes,
 
     if should_plot:
         util.plot_all(It,
-                      #[J_e], 
                       #[J_e, J_r], 
                       #[J_e, sat_list, tr_acc_list, VAcc_s],
                       [tr_acc_list, v_acc_s],
@@ -381,6 +377,7 @@ def train_nn(X, Y, X_val, Y_val, num_classes, hidden_layer_sizes,
     return nn
 
 def test_nn(nn, X_test, Y_test, num_classes):
+    logger.debug("Testing NN")
     Y_test_spread = spread(Y_test, num_classes)
     return util.get_accuracy(
         nn.classify(X_test, Y_test_spread))

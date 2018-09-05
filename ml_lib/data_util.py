@@ -20,11 +20,6 @@ def init_logger():
 
 def select_features(X, feature_ids):
     return X[:, feature_ids]
-    
-#     X_selected = np.zeros((X.shape[0], 1))
-#     for col in feature_ids:
-#         X_selected = np.append(X_selected, X[:, col:(col+1)], axis=1)
-#     return X_selected[:, 1:]
 
 def append_feature(V, X):
     logger.info("Adding feature!")
@@ -68,7 +63,6 @@ def split_into_train_test_sets(X, Y, validation_portion, test_portion):
     X = X[train_idx]
     Y = Y[train_idx]
     return (X, Y, X_valid, Y_valid, X_test, Y_test)
-    
 
 # Split range into classes
 def bucketify(Y, Y_valid, Y_test, split_points):

@@ -46,7 +46,6 @@ class Logistic(object):
         Xt = np.append(np.ones((self.X.shape[0], 1)), self.X, axis=1)
         Yt = self.Y * 2 - 1
 
-        #w = np.random.randn(Xt.shape[1]) * 0.01 - 0.005
         w = np.ones(Xt.shape[1])
         self.stats_iter = []
         self.stats_lik = []

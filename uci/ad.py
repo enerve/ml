@@ -419,14 +419,13 @@ def main():
         if args.nn:
             logger.info("Neural network...")
             util.pre_alg = "neural"
-            #from ml_lib.n_net import NNet, NNetClassifier
             
             run_single_nn = True
             if run_single_nn:
                 nn = helper.train_nn(X, Y, X_valid, Y_valid, num_classes,
                                      hidden_layer_sizes=[20],
                                      learning_rate=4, reg_constant=0.0001,
-                                     num_iterations=200)
+                                     num_iterations=200, should_plot=True)
                 helper.test_nn(nn, X_test, Y_test, num_classes)
             
             run_crossvalidation = False

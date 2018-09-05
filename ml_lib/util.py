@@ -212,7 +212,7 @@ def plot_validation_results(val_acc, xlabel, ylabel, pref=None):
     plt.colorbar()
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    plt.title('validation accuracy')
+    plt.title('Validation accuracy')
     save_plot(pref)
     plt.show()
 
